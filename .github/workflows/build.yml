@@ -1253,10 +1253,10 @@ jobs:
           rm -rf "$TMP_REKERNEL"
           git clone --depth 1 https://github.com/Sakion-Team/Re-Kernel.git "$TMP_REKERNEL"
 
-          # 准备驱动源码
           mkdir -p common/drivers/rekernel
-          cp "$TMP_REKERNEL/LKM?Source/rekernel.c" common/drivers/rekernel/
-          cp "$TMP_REKERNEL/LKM?Source/rekernel.h" common/drivers/rekernel/
+          find "$TMP_REKERNEL" -name "rekernel.c" -exec cp {} common/drivers/rekernel/ \;
+          find "$TMP_REKERNEL" -name "rekernel.h" -exec cp {} common/drivers/rekernel/ \;
+
 
 
 
