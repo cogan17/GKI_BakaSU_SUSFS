@@ -1268,6 +1268,8 @@ jobs:
          sed -i 's/\.release =/.proc_release =/g' common/drivers/rekernel/rekernel.c
          sed -i 's/\.unlocked_ioctl =/.proc_ioctl =/g' common/drivers/rekernel/rekernel.c
          sed -i 's/\.compat_ioctl =/.proc_compat_ioctl =/g' common/drivers/rekernel/rekernel.c
+         sed -i 's/\.llseek =/.proc_lseek =/g' common/drivers/rekernel/rekernel.c
+
 
          # 3. Membuat Kconfig
          cat > common/drivers/rekernel/Kconfig << 'EOF'
@@ -1285,12 +1287,13 @@ jobs:
          endmenu
          EOF
 
-         # 4. Membuat Makefile (Termasuk bypass error peringatan compiler snprintf)
+         # 4. Membuat Makefile (Termasuk bypass error peringatan compiler)
          cat > common/drivers/rekernel/Makefile << 'EOF'
          obj-$(CONFIG_REKERNEL) += rekernel.o
          ccflags-$(CONFIG_REKERNEL_NETWORK) += -DNETWORK_FILTER
-         ccflags-y += -Wno-error -Wno-format-extra-args
+         ccflags-y += -Wno-error -Wno-format -Wno-format-extra-args
          EOF
+
         
 
           # 挂载到驱动树
