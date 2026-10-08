@@ -1247,50 +1247,50 @@ jobs:
         if: ${{ inputs.clean_build != true && inputs.use_rekernel && !(inputs.android_version == 'android17' && inputs.kernel_version == '6.18') }}
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
-                  set -e
-        echo "Integrating Re-Kernel..."
-        TMP_REKERNEL=/tmp/rekernel
-        rm -rf "$TMP_REKERNEL"
-        git clone --depth 1 https://github.com/Sakion-Team/Re-Kernel.git "$TMP_REKERNEL"
+         set -e
+         echo "Integrating Re-Kernel..."
+         TMP_REKERNEL=/tmp/rekernel
+         rm -rf "$TMP_REKERNEL"
+         git clone --depth 1 https://github.com/Sakion-Team/Re-Kernel.git "$TMP_REKERNEL"
 
-        # 1. Menyiapkan dan Menyalin Folder Source
-        mkdir -p common/drivers/rekernel
-        find "$TMP_REKERNEL" -name "rekernel.c" -exec cp {} common/drivers/rekernel/ \;
-        find "$TMP_REKERNEL" -name "rekernel.h" -exec cp {} common/drivers/rekernel/ \;
+         # 1. Menyiapkan dan Menyalin Folder Source
+         mkdir -p common/drivers/rekernel
+         find "$TMP_REKERNEL" -name "rekernel.c" -exec cp {} common/drivers/rekernel/ \;
+         find "$TMP_REKERNEL" -name "rekernel.h" -exec cp {} common/drivers/rekernel/ \;
 
-        # 2. Patching Otomatis file_operations ke proc_ops (Untuk Kernel 6.1)
-        echo "Patching rekernel.c for Kernel 6.1 compatibility..."
-        sed -i 's/struct file_operations/struct proc_ops/g' common/drivers/rekernel/rekernel.c
-        sed -i 's/\.owner = THIS_MODULE,//g' common/drivers/rekernel/rekernel.c
-        sed -i 's/\.read =/.proc_read =/g' common/drivers/rekernel/rekernel.c
-        sed -i 's/\.write =/.proc_write =/g' common/drivers/rekernel/rekernel.c
-        sed -i 's/\.open =/.proc_open =/g' common/drivers/rekernel/rekernel.c
-        sed -i 's/\.release =/.proc_release =/g' common/drivers/rekernel/rekernel.c
-        sed -i 's/\.unlocked_ioctl =/.proc_ioctl =/g' common/drivers/rekernel/rekernel.c
-        sed -i 's/\.compat_ioctl =/.proc_compat_ioctl =/g' common/drivers/rekernel/rekernel.c
+         # 2. Patching Otomatis file_operations ke proc_ops (Untuk Kernel 6.1)
+         echo "Patching rekernel.c for Kernel 6.1 compatibility..."
+         sed -i 's/struct file_operations/struct proc_ops/g' common/drivers/rekernel/rekernel.c
+         sed -i 's/\.owner = THIS_MODULE,//g' common/drivers/rekernel/rekernel.c
+         sed -i 's/\.read =/.proc_read =/g' common/drivers/rekernel/rekernel.c
+         sed -i 's/\.write =/.proc_write =/g' common/drivers/rekernel/rekernel.c
+         sed -i 's/\.open =/.proc_open =/g' common/drivers/rekernel/rekernel.c
+         sed -i 's/\.release =/.proc_release =/g' common/drivers/rekernel/rekernel.c
+         sed -i 's/\.unlocked_ioctl =/.proc_ioctl =/g' common/drivers/rekernel/rekernel.c
+         sed -i 's/\.compat_ioctl =/.proc_compat_ioctl =/g' common/drivers/rekernel/rekernel.c
 
-        # 3. Membuat Kconfig
-        cat > common/drivers/rekernel/Kconfig << 'EOF'
-        menu "Re:Kernel"
-        config REKERNEL
+         # 3. Membuat Kconfig
+         cat > common/drivers/rekernel/Kconfig << 'EOF'
+         menu "Re:Kernel"
+         config REKERNEL
             bool "Re:Kernel support (GKI Vendor Hooks)"
             default y
             help
               Enable Re-Kernel support via GKI Vendor Hooks.
 
-        config REKERNEL_NETWORK
+         config REKERNEL_NETWORK
             bool "Re:Kernel NetReceive unfreeze support"
             depends on REKERNEL
             default n
-        endmenu
-        EOF
+         endmenu
+         EOF
 
-        # 4. Membuat Makefile (Termasuk bypass error peringatan compiler snprintf)
-        cat > common/drivers/rekernel/Makefile << 'EOF'
-        obj-$(CONFIG_REKERNEL) += rekernel.o
-        ccflags-$(CONFIG_REKERNEL_NETWORK) += -DNETWORK_FILTER
-        ccflags-y += -Wno-error -Wno-format-extra-args
-        EOF
+         # 4. Membuat Makefile (Termasuk bypass error peringatan compiler snprintf)
+         cat > common/drivers/rekernel/Makefile << 'EOF'
+         obj-$(CONFIG_REKERNEL) += rekernel.o
+         ccflags-$(CONFIG_REKERNEL_NETWORK) += -DNETWORK_FILTER
+         ccflags-y += -Wno-error -Wno-format-extra-args
+         EOF
         
 
           # 挂载到驱动树
