@@ -1320,6 +1320,22 @@ jobs:
           grep -q '^CONFIG_REKERNEL=y$' "$DEFCONFIG" || echo "CONFIG_REKERNEL=y" >> "$DEFCONFIG"
           grep -q '^CONFIG_REKERNEL_NETWORK=y$' "$DEFCONFIG" || echo "CONFIG_REKERNEL_NETWORK=y" >> "$DEFCONFIG"
 
+          # ==================== 应用 NoMount ====================
+      # 隐藏挂载点以绕过 Root 检测 (NoMount)
+      - name: 应用 NoMount
+        if: inputs.clean_build != true
+        working-directory: ${{ env.KERNEL_ROOT }}/common
+        run: |
+          set -e
+          echo "Integrating NoMount (dev branch)..."
+          curl -sSL https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh | bash -s dev
+          
+          # 启用 NoMount 内核配置 (Built-in)
+          if ! grep -q "^CONFIG_NOMOUNT=y" "$DEFCONFIG"; then
+            echo "CONFIG_NOMOUNT=y" >> "$DEFCONFIG"
+            echo "✅ 已成功启用 CONFIG_NOMOUNT"
+          fi
+
       # ==================== 配置内核选项 ====================
       # 添加 KernelSU 和其他必要的内核配置
       - name: 配置内核选项
