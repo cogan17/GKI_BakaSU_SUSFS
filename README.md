@@ -1,5 +1,4 @@
 [中文](README.md) | [English](README_en.md) | [Bahasa Indonesia](README_id.md)
-
 <div align="center">
 
 # GKI BakaSU SUSFS
