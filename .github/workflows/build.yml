@@ -116,7 +116,7 @@ jobs:
       - name: Build configuration summary
         run: |
           echo "========================================"
-          echo "       内核构建配置摘要"
+          echo "       Kernel Build Configuration Summary"
           echo "========================================"
           echo "Android version  : ${{ inputs.android_version }}"
           echo "Kernel version      : ${{ inputs.kernel_version }}"
@@ -124,7 +124,7 @@ jobs:
           echo "Patch level      : ${{ inputs.os_patch_level }}"
           echo "Build mode      : $BUILD_VARIANT"
           if [ "${{ inputs.clean_build }}" = "true" ]; then
-            echo "KernelSU      : 禁用"
+            echo "KernelSU      : Disabled"
             echo "KSU branch      : Not applicable"
             echo "Droidspaces   : off"
           else
@@ -142,7 +142,7 @@ jobs:
           echo "NTSync        : ${{ inputs.clean_build != true && inputs.droidspaces != 'off' && inputs.droidspaces_ntsync && !(inputs.android_version == 'android17' && inputs.kernel_version == '6.18') }}"
           echo "OnePlus 8E    : ${{ inputs.clean_build != true && inputs.supp_op && !(inputs.android_version == 'android17' && inputs.kernel_version == '6.18') }}"
           echo "Bypass build   : ${{ inputs.build_bypass }}"
-          echo "Stock Config  : ${{ inputs.clean_build && '禁用' || 'Auto-detect config/stock_defconfig' }}"
+          echo "Stock Config  : ${{ inputs.clean_build && 'Disabled' || 'Auto-detect config/stock_defconfig' }}"
           echo "========================================"
 
       - name: Validate Android and KMI pairing
@@ -472,7 +472,7 @@ jobs:
             sed -i 's|\$(obj)/config_data: \$(KCONFIG_CONFIG) FORCE|$(obj)/config_data: arch/arm64/configs/stock_defconfig FORCE|' "$TARGET_MAKEFILE"
             echo "Replaced config_data rule: $TARGET_MAKEFILE"
           else
-            echo "::error::未在 $TARGET_MAKEFILE find rule: $OLD_RULE"
+            echo "::error::Could not find rule in $TARGET_MAKEFILE: $OLD_RULE"
             exit 1
           fi
 
@@ -787,7 +787,7 @@ jobs:
           fi
 
           if [ "${{ inputs.ksu_variant }}" == "Official" ] || [ "${{ inputs.ksu_variant }}" == "Next" ] || [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "BakaSU" ]; then
-            # Android 12 - 5.10 修复
+            # Android 12 - 5.10 fixes
             if [[ "${{ inputs.android_version }}" == "android12" && "${{ inputs.kernel_version }}" == "5.10" ]]; then
                if [[ "$CURRENT_SUB" -le 209 ]]; then
                  sed -i -e 's/goto show_pad;/return 0;/' ./fs/proc/task_mmu.c
@@ -799,7 +799,7 @@ jobs:
                fi
              fi
 
-             # 5.15 修复
+             # 5.15 fixes
             if [[ "${{ inputs.kernel_version }}" == "5.15" ]]; then
                if [[ "$CURRENT_SUB" -le 148 && "${{ inputs.os_patch_level }}" != "2024-05" ]]; then
                  sed -i -e 's/goto show_pad;/return 0;/' ./fs/proc/task_mmu.c
@@ -831,7 +831,7 @@ jobs:
               fi
             fi
 
-            # Android 14 - 6.1 修复
+            # Android 14 - 6.1 fixes
             if [[ "${{ inputs.android_version }}" == "android14" && "${{ inputs.kernel_version }}" == "6.1" ]]; then
               if grep -q 'susfs_is_current_proc_umounted\|SUSFS_IS_INODE_SUS_MAP\|SUSFS_IS_INODE_OPEN_REDIRECT' ./fs/proc/base.c && ! grep -qF '#include <linux/susfs_def.h>' ./fs/proc/base.c; then
                 if grep -qF '#include <linux/dma-buf.h>' ./fs/proc/base.c; then
@@ -859,7 +859,7 @@ jobs:
               fi
             fi
 
-            # Android 15 - 6.6 修复
+            # Android 15 - 6.6 fixes
             if [[ "${{ inputs.android_version }}" == "android15" && "${{ inputs.kernel_version }}" == "6.6" ]]; then
               # Fix 6.6.50–6.6.97: fs/proc/base.c header hunk mismatch omits susfs_def.h
               if grep -q 'AS_FLAGS_SUS_MAP\|susfs_is_current_proc_umounted\|SUSFS_IS_INODE_SUS_MAP\|SUSFS_IS_INODE_OPEN_REDIRECT' ./fs/proc/base.c && ! grep -qF 'susfs_def.h' ./fs/proc/base.c; then
@@ -880,13 +880,13 @@ jobs:
               fi
             fi
 
-            # Android 16 - 6.12 修复
+            # Android 16 - 6.12 fixes
             if [[ "${{ inputs.android_version }}" == "android16" && "${{ inputs.kernel_version }}" == "6.12" ]]; then
               # Fix duplicate setuid_hook.c definition
               SETUID_HOOK="$KERNEL_ROOT/common/drivers/kernelsu/setuid_hook.c"
               if [ -f "$SETUID_HOOK" ]; then
                 sed -i 's/defined(CONFIG_KSU_MANUAL_HOOK))/!defined(CONFIG_KSU_SUSFS) \&\& defined(CONFIG_KSU_MANUAL_HOOK))/' "$SETUID_HOOK"
-                echo "已Fix duplicate setuid_hook.c definitionissue"
+                echo "Fixed duplicate setuid_hook.c definition"
               fi
 
               # Fix 6.12.58+: changed exec.c header context causes SUSFS patch to omit susfs_def.h
@@ -970,10 +970,10 @@ jobs:
               echo "  Enabled: $cfg"
             elif grep -q "^# ${cfg} is not set" "$DEFCONFIG"; then
               sed -i "s/^# ${cfg} is not set$/${cfg}=y/" "$DEFCONFIG"
-              echo "  已切换: $cfg"
+              echo "  Switched: $cfg"
             else
               echo "${cfg}=y" >> "$DEFCONFIG"
-              echo "  已添加: $cfg"
+              echo "  Added: $cfg"
             fi
           }
 
@@ -987,7 +987,7 @@ jobs:
             if config_defined "$cfg"; then
               enable_config "$cfg"
             else
-              echo "  Not defined by current kernel: $cfg，跳过"
+              echo "  Not defined by current kernel: $cfg; skipping"
             fi
           }
 
@@ -1018,13 +1018,13 @@ jobs:
           disable_config() {
             local cfg="$1"
             if grep -q "^${cfg}=n" "$DEFCONFIG"; then
-              echo "  已禁用: $cfg"
+              echo "  已Disabled: $cfg"
             elif grep -q "^${cfg}=y" "$DEFCONFIG"; then
               sed -i "s/^${cfg}=y$/${cfg}=n/" "$DEFCONFIG"
-              echo "  已关闭: $cfg"
+              echo "  Turned off: $cfg"
             else
               echo "# ${cfg} is not set" >> "$DEFCONFIG"
-              echo "  已添加并禁用: $cfg"
+              echo "  Added并Disabled: $cfg"
             fi
           }
 
@@ -1042,7 +1042,7 @@ jobs:
           set -e
           echo "=== Start injecting NTSync kernel patch ==="
           echo "Android version: ${{ inputs.android_version }}"
-          echo "Kernel 版本: ${{ inputs.kernel_version }}"
+          echo "Kernel version: ${{ inputs.kernel_version }}"
 
           case "${{ inputs.android_version }}-${{ inputs.kernel_version }}" in
             android12-5.10)
@@ -1065,7 +1065,7 @@ jobs:
               NTSYNC_PATCH="ntsync_compat_android16-6.12"
               ;;
             *)
-              echo "::warning::NTSync: 未适配 ${{ inputs.android_version }} / ${{ inputs.kernel_version }}，skipping patch"
+              echo "::warning::NTSync: Unsupported on ${{ inputs.android_version }} / ${{ inputs.kernel_version }}，skipping patch"
               exit 0
               ;;
           esac
@@ -1451,7 +1451,7 @@ jobs:
               sed -i "/^CONFIG_LOCALVERSION=/ s/=\"[^\"]*\"/=\"${KMI_LOCAL}\"/" ./arch/arm64/configs/gki_defconfig 2>/dev/null || true
             else
               # 6.6+: modify setlocalversion to inject version name (new format, based on wild_kernel)
-              # Preserve ${KERNELVERSION} 和 ${config_localversion} for runtime script expansion
+              # Preserve ${KERNELVERSION} and ${config_localversion} for runtime script expansion
               SUFFIX="-${KMI_TAG}-g${GHASH}-${BID}"
               perl -i -0777 -pe 's/(.*)echo "\$\{KERNELVERSION\}\$\{file_localversion\}\$\{config_localversion\}\$\{LOCALVERSION\}\$\{scm_version\}"/$1echo "\$\{KERNELVERSION\}'"${SUFFIX}"'\$\{config_localversion\}"/s' ./scripts/setlocalversion 2>/dev/null || true
             fi
