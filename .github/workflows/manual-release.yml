@@ -43,28 +43,73 @@ jobs:
             *) echo "::error::Source must be a supported kernel build workflow ($workflow_path)"; exit 1 ;;
           esac
 
-      - name: Download original ZIP
+      - name: Download ZIP without extracting
         uses: actions/download-artifact@v8
         with:
           run-id: ${{ inputs.source_run_id }}
-          # New direct ZIP artifacts and legacy wrapped artifacts
           pattern: '*'
           path: downloaded-artifacts
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Important: direct ZIP artifacts must not be extracted by this action.
+          skip-decompress: true
 
       - name: Validate original AnyKernel3 ZIP
         id: package
         shell: bash
         run: |
           set -euo pipefail
-          # Direct artifacts contain the ready-to-flash ZIP. Older artifacts contain
-          # that ZIP inside the Actions artifact container, extracted by this action.
+          # Build artifacts from upload-artifact@v7 are the original ZIP directly.
+          # Legacy v6 artifacts wrap this ZIP, so unwrap only legacy artifacts here.
           mapfile -d '' archives < <(find downloaded-artifacts -type f -name '*AnyKernel3.zip' -print0)
-          if [[ "${#archives[@]}" -ne 1 ]]; then
-            echo "::error::Expected exactly one AnyKernel3 ZIP, found ${#archives[@]}"
+          if [[ "${#archives[@]}" -eq 1 ]]; then
+            archive="${archives[0]}"
+          elif [[ "${#archives[@]}" -eq 0 ]]; then
+            mapfile -d '' legacy < <(find downloaded-artifacts -type f -name '*_kernel-*.zip' ! -name '*-Rejects.zip' -print0)
+            if [[ "${#legacy[@]}" -ne 1 ]]; then
+              echo "::error::Expected one legacy kernel artifact, found ${#legacy[@]}"
+              exit 1
+            fi
+            mapfile -t members < <(unzip -Z -1 "${legacy[0]}" | grep -E '(^|/)[^/]*-AnyKernel3[.]zip
+          unzip -tq "$archive" > /dev/null
+          entries="$(unzip -Z -1 "$archive")"
+          grep -Fxq 'anykernel.sh' <<< "$entries" || { echo "::error::Missing anykernel.sh"; exit 1; }
+          grep -Fxq 'Image' <<< "$entries" || { echo "::error::Missing Image"; exit 1; }
+          mkdir -p release-files
+          cp -- "$archive" "release-files/$(basename "$archive")"
+          echo "title=$(basename "$archive" -AnyKernel3.zip)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: BakaSU-run-${{ inputs.source_run_id }}
+          name: ${{ steps.package.outputs.title }}
+          target_commitish: ${{ steps.source.outputs.sha }}
+          prerelease: ${{ inputs.release_type == 'Pre-Release' }}
+          body: |
+            Original AnyKernel3 ZIP from successful build run #${{ inputs.source_run_id }}.
+            Unmodified package. Back up your boot image and verify device compatibility before flashing.
+          files: release-files/*AnyKernel3.zip
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show direct download link
+        run: |
+          echo "### Ready-to-flash ZIP" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download the original AnyKernel3 ZIP from the [GitHub Release]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/BakaSU-run-${{ inputs.source_run_id }})." >> "$GITHUB_STEP_SUMMARY"
+          echo "New build artifacts and Release assets are both directly flashable ZIP files." >> "$GITHUB_STEP_SUMMARY"
+ || true)
+            if [[ "${#members[@]}" -ne 1 ]]; then
+              echo "::error::Legacy artifact must contain exactly one AnyKernel3 ZIP"
+              exit 1
+            fi
+            mkdir -p unwrapped
+            archive="unwrapped/$(basename "${members[0]}")"
+            unzip -p "${legacy[0]}" "${members[0]}" > "$archive"
+          else
+            echo "::error::Found multiple AnyKernel3 ZIP files; refusing to guess."
             exit 1
           fi
-          archive="${archives[0]}"
           unzip -tq "$archive" > /dev/null
           entries="$(unzip -Z -1 "$archive")"
           grep -Fxq 'anykernel.sh' <<< "$entries" || { echo "::error::Missing anykernel.sh"; exit 1; }
