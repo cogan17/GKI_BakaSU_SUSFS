@@ -514,7 +514,7 @@ jobs:
             if [ "${{ inputs.cancel_susfs }}" = "true" ]; then
               RELEASE_NAME="GKI Kernel: ${KSU_NAME}"
               echo "SUSFS_SUFFIX=" >> "$GITHUB_ENV"
-              echo "SUSFS_STATUS=Not included / Not included" >> "$GITHUB_ENV"
+              echo "SUSFS_STATUS=Not included" >> "$GITHUB_ENV"
               echo "HOOK_TYPE=" >> "$GITHUB_ENV"
               echo "MOUNT_TYPE=" >> "$GITHUB_ENV"
             elif [ "${{ inputs.build_target }}" = "android17-6.18" ]; then
@@ -613,30 +613,30 @@ jobs:
 
           This release contains GKI kernels without KernelSU, SUSFS, or optional feature patches.
 
-          | Component / Component | Status / Status |
+          | Component | Status |
           |:---|:---|
-          | KernelSU | Not included / Not included |
-          | SUSFS | Not included / Not included |
-          | ZRAM, BBG, Re-Kernel, Droidspaces | Not included / Not included |
+          | KernelSU | Not included |
+          | SUSFS | Not included |
+          | ZRAM, BBG, Re-Kernel, Droidspaces | Not included |
 
           > Back up the stock boot image before flashing, and verify kernel compatibility with your device.
 
           **LTO**: thin (Android 16 / 17 use none)
 
-          Click **Assets** to expand downloads / Expand **Assets** below to download.
+          Click **Assets** below to expand downloads.
           EOF
 
       - name: Generate standard release notes
         if: inputs.clean_build != true
         run: |
           cat > release_body.md << EOF
-          ## 📦 Release contents / Release Contents
+          ## 📦 Release Contents
 
           **${{ env.KSU_NAME }}**${{ env.SUSFS_SUFFIX }}${{ env.LZ4_SUFFIX }}
 
-          ### ✨ Features / Features
+          ### ✨ Features
 
-          | Component / Component | Status / Status |
+          | Component | Status |
           |:---|:---|
           | ${{ env.KSU_NAME }} | ${{ env.BRANCH_INFO }} |
           | SUSFS | ${{ env.SUSFS_STATUS }} |
@@ -651,21 +651,21 @@ jobs:
 
           > 💡 [Unicode zero-width bypass fix](https://t.me/real5ec1cff/268) - Please use the Xposed module
 
-          ### 📥 Recommended module / Recommended Module
+          ### 📥 Recommended Modules
 
           - https://github.com/sidex15/ksu_module_susfs
 
           ---
 
           > [!IMPORTANT]
-          > ### ⚠️ Risk disclaimer / Risk Disclaimer
+          > ### ⚠️ Risk Disclaimer
           >
           > This project combines several **actively maintained upstream components**. Because updates are frequent and components depend on one another, **the following issues may occur**：
           >
-          > - 🔄 Bootloop (Bootloop)
+          > - 🔄 Bootloop
           > - 🐛 Feature malfunctions or system instability
           >
-          > **Before flashing, be sure to：**
+          > **Before flashing:**
           > 1. Back up the stock boot image so you can restore it
           > 2. Note the current time to help with log analysis
           >
@@ -681,7 +681,7 @@ jobs:
           > 2. Note the current time for log analysis
 
           <details>
-          <summary>📋 Post-flash guide / Post-Flash Guide</summary>
+          <summary>📋 Post-Flash Guide</summary>
 
           #### ✅ If boot succeeds / If Boot Successful
 
@@ -704,7 +704,7 @@ jobs:
           ---
 
           <details>
-          <summary>🔗 Commit info / Commit Info</summary>
+          <summary>🔗 Commit Information</summary>
 
           **KernelSU (BakaSU)**: [${{ env.KSU_REF }}](${{ env.KSU_URL }})
 
@@ -723,7 +723,7 @@ jobs:
 
           **LTO**: thin (Android 16 / 17 use none)
 
-          📂 Click **Assets** to expand downloads / Click **Assets** below to download
+          📂 Click **Assets** below to expand downloads.
           EOF
 
       - name: Generate version tag
