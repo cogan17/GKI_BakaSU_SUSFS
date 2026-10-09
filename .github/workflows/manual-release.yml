@@ -92,4 +92,4 @@ jobs:
         run: |
           echo "### Ready-to-flash ZIP" >> "$GITHUB_STEP_SUMMARY"
           echo "Download the original AnyKernel3 ZIP from the [GitHub Release]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/BakaSU-run-${{ inputs.source_run_id }})." >> "$GITHUB_STEP_SUMMARY"
-          echo "Do not download the Actions artifact if you want a ZIP that does not need extraction." >> "$GITHUB_STEP_SUMMARY"
+          echo "New build artifacts and Release assets are both directly flashable ZIP files." >> "$GITHUB_STEP_SUMMARY"
