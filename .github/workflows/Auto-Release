@@ -1,0 +1,46 @@
+name: Auto Repack & Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Latest Build Artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build.yml
+          path: downloaded_artifacts
+
+      - name: Repack AnyKernel3 (Siap Flash)
+        run: |
+          echo "Mencari file anykernel.sh dari artifact..."
+          AK3_DIR=$(dirname $(find downloaded_artifacts -name "anykernel.sh" | head -n 1))
+          
+          if [ -z "$AK3_DIR" ] || [ "$AK3_DIR" == "." ]; then
+            echo "Error: anykernel.sh tidak ditemukan! Pastikan build sebelumnya berhasil."
+            exit 1
+          fi
+          
+          echo "Folder AnyKernel3 ditemukan di: $AK3_DIR"
+          cd "$AK3_DIR"
+          zip -r9 $GITHUB_WORKSPACE/BakaSU-Rothko-GKI-6.1-ReadyToFlash.zip * -x .git README.md *placeholder
+          echo "Repack selesai!"
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: BakaSU-Rothko-v${{ github.run_number }}
+          name: GKI 6.1 BakaSU 
+          body: |
+            🚀 **Automated Repack & Release**
+            - **Device:** Xiaomi 14T Pro (Rothko)
+            - **Kernel:** GKI 6.1.177 BakaSU
+            - **Features:** SUSFS + Re-Kernel (proc_ops fixed)
+            
+            ✅ *File zip ini sudah di-repack otomatis ke format AnyKernel3 asli. Siap di-flash via Kernel Flasher / FKM.*
+          files: BakaSU-Rothko-GKI-6.1-ReadyToFlash.zip
