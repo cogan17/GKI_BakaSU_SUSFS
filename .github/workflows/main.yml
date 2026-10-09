@@ -248,7 +248,7 @@ jobs:
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
       build_bypass: ${{ inputs.build_bypass || false }}
 
-  # ==================== Android 12 - 5.10 构建 ====================
+  # ==================== Android 12 - 5.10 builds ====================
   build-a12-5-10:
     if: ${{ !inputs.build_kernel_version && (inputs.build_target == 'android12-5.10' || inputs.build_target == 'all') }}
     needs: resolve-ksu-ref
@@ -268,7 +268,7 @@ jobs:
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}
       build_bypass: ${{ inputs.build_bypass }}
 
-  # ==================== Android 13 - 5.10 构建 ====================
+  # ==================== Android 13 - 5.10 builds ====================
   build-a13-5-10:
     if: ${{ !inputs.build_kernel_version && (inputs.build_target == 'android13-5.10' || inputs.build_target == 'all') }}
     needs: resolve-ksu-ref
@@ -288,7 +288,7 @@ jobs:
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}
       build_bypass: ${{ inputs.build_bypass }}
 
-  # ==================== Android 13 - 5.15 构建 ====================
+  # ==================== Android 13 - 5.15 builds ====================
   build-a13-5-15:
     if: ${{ !inputs.build_kernel_version && (inputs.build_target == 'android13-5.15' || inputs.build_target == 'all') }}
     needs: resolve-ksu-ref
@@ -308,7 +308,7 @@ jobs:
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}
       build_bypass: ${{ inputs.build_bypass }}
 
-  # ==================== Android 14 - 5.15 构建 ====================
+  # ==================== Android 14 - 5.15 builds ====================
   build-a14-5-15:
     if: ${{ !inputs.build_kernel_version && (inputs.build_target == 'android14-5.15' || inputs.build_target == 'all') }}
     needs: resolve-ksu-ref
@@ -329,7 +329,7 @@ jobs:
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}
       build_bypass: ${{ inputs.build_bypass }}
 
-  # ==================== Android 14 - 6.1 构建 ====================
+  # ==================== Android 14 - 6.1 builds ====================
   build-a14-6-1:
     if: ${{ !inputs.build_kernel_version && (inputs.build_target == 'android14-6.1' || inputs.build_target == 'all') }}
     needs: resolve-ksu-ref
@@ -349,7 +349,7 @@ jobs:
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}
       build_bypass: ${{ inputs.build_bypass }}
 
-  # ==================== Android 15 - 6.6 构建 ====================
+  # ==================== Android 15 - 6.6 builds ====================
   build-a15-6-6:
     if: ${{ !inputs.build_kernel_version && (inputs.build_target == 'android15-6.6' || inputs.build_target == 'all') }}
     needs: resolve-ksu-ref
@@ -369,7 +369,7 @@ jobs:
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}
       build_bypass: ${{ inputs.build_bypass }}
 
-  # ==================== Android 16 - 6.12 构建 ====================
+  # ==================== Android 16 - 6.12 builds ====================
   build-a16-6-12:
     if: ${{ !inputs.build_kernel_version && (inputs.build_target == 'android16-6.12' || inputs.build_target == 'all') }}
     needs: resolve-ksu-ref
@@ -389,7 +389,7 @@ jobs:
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}
       build_bypass: ${{ inputs.build_bypass }}
 
-  # ==================== Android 17 - 6.18 构建 ====================
+  # ==================== Android 17 - 6.18 builds ====================
   build-a17-6-18:
     if: ${{ !inputs.build_kernel_version && (inputs.build_target == 'android17-6.18' || inputs.build_target == 'all') }}
     needs: resolve-ksu-ref
