@@ -103,3 +103,25 @@ Artifact names include the Android KMI, full kernel version, and OS security pat
 
 ```text
 android14-5.15.148-2024-05-r25-BakaSU-AnyKernel3.zip
+
+After enabling Bypass, both the regular `Image` and `Bypass-Image` are included in the installation package. Choose artifacts matching your device's Android KMI and kernel branch; back up your original boot image before flashing, and ensure your device has a working recovery method.
+
+## Stock Config
+
+If `config/stock_defconfig` exists in the repository, the build will automatically use it for `/proc/config.gz` config masking; if the file does not exist, this step is skipped. You can extract `/proc/config.gz` from the device's current official kernel, decompress it, place it in this directory, and name it `stock_defconfig`.
+
+## GKI Data Synchronization
+
+The [Update GKI Version Data](.github/workflows/update-gki-data.yml) workflow runs automatically every Monday at UTC 08:00, and can also be triggered manually. The workflow runs sync tests, updates JSON, validates the build matrix, and commits data changes.
+
+## Acknowledgments
+
+- [zzh20188](https://github.com/zzh20188): Former upstream GKI build repository author. This repository has now separated from the fork network, and zzh20188/GKI_KernelSU_SUSFS is no longer the upstream repository for this repo.
+- [coolzyd9107](https://github.com/coolzyd9107): Maintainer of this repository.
+- [zhuzhuzihan](https://github.com/zhuzhuzihan): Workflow fixes and Telegram Bot development & maintenance.
+- [TanakaLun](https://github.com/TanakaLun): Workflow fixes and feature improvements.
+- [YC酱luyancib](https://github.com/luyanci): Telegram Bot and build workflow suggestions.
+- [AlexLiuDev233](https://github.com/AlexLiuDev233): Workflow bug fixes.
+- [cctv18](https://github.com/cctv18): Workflow, 6.12 support, and SUSFS issue fix suggestions.
+
+For new builds and major change notifications, see the [Telegram Channel](https://t.me/BakaSUKernelBuilds); for the official BakaSU channel, see [BakaSU_Grp](https://t.me/BakaSU_Grp).
