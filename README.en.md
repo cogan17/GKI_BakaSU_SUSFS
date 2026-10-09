@@ -101,7 +101,6 @@ Droidspaces patches are experimental, different devices and kernel versions may 
 
 Artifact names include the Android KMI, full kernel version, and OS security patch level; upstream revisions will also be appended if present. For example:
 
-```text
 android14-5.15.148-2024-05-r25-BakaSU-AnyKernel3.zip
 
 After enabling Bypass, both the regular `Image` and `Bypass-Image` are included in the installation package. Choose artifacts matching your device's Android KMI and kernel branch; back up your original boot image before flashing, and ensure your device has a working recovery method.
