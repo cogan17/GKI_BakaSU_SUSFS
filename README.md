@@ -1,3 +1,4 @@
+简体中文 | English | Bahasa Indonesia
 <div align="center">
 
 # GKI BakaSU SUSFS
