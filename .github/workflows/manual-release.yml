@@ -37,12 +37,18 @@ jobs:
           source_repo="$(jq -r '.head_repository.full_name // ""' <<< "$run_json")"
           [[ "$source_repo" == "$GITHUB_REPOSITORY" ]] || { echo "::error::Build belongs to another repository"; exit 1; }
           echo "sha=$(jq -r '.head_sha' <<< "$run_json")" >> "$GITHUB_OUTPUT"
+          workflow_path="$(jq -r '.path // ""' <<< "$run_json")"
+          case "$workflow_path" in
+            .github/workflows/kernel-custom.yml|.github/workflows/main.yml) ;;
+            *) echo "::error::Source must be a supported kernel build workflow ($workflow_path)"; exit 1 ;;
+          esac
 
       - name: Download original ZIP
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           run-id: ${{ inputs.source_run_id }}
-          pattern: BakaSU_kernel-*
+          # New direct ZIP artifacts and legacy wrapped artifacts
+          pattern: '*'
           path: downloaded-artifacts
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -51,9 +57,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Direct artifacts contain the ready-to-flash ZIP. Older artifacts contain
+          # that ZIP inside the Actions artifact container, extracted by this action.
           mapfile -d '' archives < <(find downloaded-artifacts -type f -name '*AnyKernel3.zip' -print0)
           if [[ "${#archives[@]}" -ne 1 ]]; then
-            echo "::error::Expected one AnyKernel3 ZIP, found ${#archives[@]}"
+            echo "::error::Expected exactly one AnyKernel3 ZIP, found ${#archives[@]}"
             exit 1
           fi
           archive="${archives[0]}"
