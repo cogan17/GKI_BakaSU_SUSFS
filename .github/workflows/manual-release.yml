@@ -77,7 +77,6 @@ jobs:
           name: GKI 6.1 BakaSU + Re-Kernel (${{ inputs.release_type }})
           prerelease: ${{ steps.r_type.outputs.prerelease == 'true' }}
           body: |
-            🚀 **Manual Release from Run ID: ${{ inputs.source_run_id }}**
             - **Tested:** Xiaomi 14T Pro (Rothko)
             - **Kernel:** GKI 6.1.177 BakaSU
             - **Features:** SUSFS + Re-Kernel + ZRAM + BBG + CVE
