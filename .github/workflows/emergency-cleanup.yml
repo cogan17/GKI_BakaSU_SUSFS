@@ -35,10 +35,10 @@ jobs:
       - name: Verify release exists
         run: |
           if ! gh release view "${{ inputs.target_tag }}" --repo ${{ github.repository }} > /dev/null 2>&1; then
-            echo "::error::Release '${{ inputs.target_tag }}' 不存在"
+            echo "::error::Release '${{ inputs.target_tag }}' does not exist"
             exit 1
           fi
-          echo "✅ 找到 Release: ${{ inputs.target_tag }}"
+          echo "✅ Found release: ${{ inputs.target_tag }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -60,7 +60,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ==================== 处理 Normal Type ====================
+      # ==================== Handle Normal type ====================
       - name: Handle Normal: mark release verified
         if: inputs.issue_type == 'Normal'
         run: |
@@ -120,7 +120,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ==================== 处理 Critical Type ====================
+      # ==================== Handle Critical type ====================
       - name: Handle Critical: delete and recreate release
         if: inputs.issue_type == 'Critical'
         run: |
@@ -177,6 +177,6 @@ jobs:
           echo "=========================================="
           echo "🎯 Target tag: ${{ inputs.target_tag }}"
           echo "📌 Issue type: ${{ inputs.issue_type }}"
-          echo "📝 Reference information: ${{ inputs.reference || '无' }}"
+          echo "📝 Reference information: ${{ inputs.reference || 'None' }}"
           echo "=========================================="
           echo "✅ Emergency cleanup complete！"
