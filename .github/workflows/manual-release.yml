@@ -79,7 +79,7 @@ jobs:
           body: |
             - **Tested:** Xiaomi 14T Pro (Rothko)
             - **Kernel:** GKI 6.1.177 BakaSU
-            - **Features:** SUSFS + Re-Kernel + ZRAM + BBG + CVE
+            - **Features:** SUSFS + Re-Kernel + ZRAM + BBG + CVE + NoMount
             
             ✅ *File zip ini sudah terekstrak dengan benar dan merupakan AnyKernel3 asli. Siap di-flash via Kernel Flasher / FKM.*
           files: BakaSU-Rothko-GKI-6.1-ReadyToFlash.zip
