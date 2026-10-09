@@ -1,89 +1,81 @@
-name: Manual Release From Run
+name: Publish Kernel Release
 
 on:
   workflow_dispatch:
     inputs:
       source_run_id:
-        description: 'Run ID dari build yang sukses'
+        description: Successful build run ID
         required: true
         type: string
       release_type:
-        description: 'Tipe Rilis'
+        description: Release type
         type: choice
         options:
           - Pre-Release
           - Release
         default: Pre-Release
 
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      actions: read
+permissions:
+  contents: write
+  actions: read
 
+jobs:
+  publish:
+    runs-on: ubuntu-latest
     steps:
-      - name: Download Artifact berdasarkan Run ID
+      - name: Verify successful build
+        id: source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]] || { echo "::error::Run ID must be numeric"; exit 1; }
+          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID")"
+          result="$(jq -r '.conclusion // ""' <<< "$run_json")"
+          [[ "$result" == success ]] || { echo "::error::Source run status: $result"; exit 1; }
+          source_repo="$(jq -r '.head_repository.full_name // ""' <<< "$run_json")"
+          [[ "$source_repo" == "$GITHUB_REPOSITORY" ]] || { echo "::error::Build belongs to another repository"; exit 1; }
+          echo "sha=$(jq -r '.head_sha' <<< "$run_json")" >> "$GITHUB_OUTPUT"
+
+      - name: Download original ZIP
         uses: actions/download-artifact@v4
         with:
           run-id: ${{ inputs.source_run_id }}
-          path: downloaded_artifacts
+          pattern: BakaSU_kernel-*
+          path: downloaded-artifacts
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Ekstrak & Repack Artifact
+      - name: Validate original AnyKernel3 ZIP
+        id: package
+        shell: bash
         run: |
-          echo "Mencari file zip di dalam artifact..."
-          cd downloaded_artifacts
-              
-          ZIP_FILE=$(find . -name "*.zip" | head -n 1)
-              
-          if [ -z "$ZIP_FILE" ]; then
-            echo "Error: Tidak ditemukan file .zip di dalam artifact!"
+          set -euo pipefail
+          mapfile -d '' archives < <(find downloaded-artifacts -type f -name '*AnyKernel3.zip' -print0)
+          if [[ "${#archives[@]}" -ne 1 ]]; then
+            echo "::error::Expected one AnyKernel3 ZIP, found ${#archives[@]}"
             exit 1
           fi
-              
-          echo "Ditemukan file ZIP artifact: $ZIP_FILE"
-          echo "Mengekstrak file..."
-              
-          mkdir -p extracted_temp
-          unzip -q "$ZIP_FILE" -d extracted_temp/
-              
-          echo "Mencari anykernel.sh di hasil ekstraksi..."
-          AK3_DIR=$(dirname $(find extracted_temp -name "anykernel.sh" | head -n 1))
-              
-          if [ -z "$AK3_DIR" ] || [ "$AK3_DIR" == "." ]; then
-             echo "Error: anykernel.sh tidak ditemukan. Pastikan artifact berisi file AnyKernel3."
-             exit 1
-          fi
-              
-          echo "Folder AnyKernel3 ditemukan di: $AK3_DIR"
-          cd "$AK3_DIR"
-              
-          echo "Membungkus ulang (Repack) ke format AnyKernel3 standar..."
-          zip -r9 $GITHUB_WORKSPACE/BakaSU-Rothko-GKI-6.1-ReadyToFlash.zip * -x .git README.md *placeholder
-          echo "Repack selesai!"
+          archive="${archives[0]}"
+          unzip -tq "$archive" > /dev/null
+          entries="$(unzip -Z -1 "$archive")"
+          grep -Fxq 'anykernel.sh' <<< "$entries" || { echo "::error::Missing anykernel.sh"; exit 1; }
+          grep -Fxq 'Image' <<< "$entries" || { echo "::error::Missing Image"; exit 1; }
+          mkdir -p release-files
+          cp -- "$archive" "release-files/$(basename "$archive")"
+          echo "title=$(basename "$archive" -AnyKernel3.zip)" >> "$GITHUB_OUTPUT"
 
-      - name: Atur Label Rilis (Pre-Release / Release)
-        id: r_type
-        run: |
-          if [ "${{ inputs.release_type }}" == "Pre-Release" ]; then
-            echo "prerelease=true" >> $GITHUB_OUTPUT
-          else
-            echo "prerelease=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Publikasi ke GitHub Releases
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: BakaSU-Rothko-${{ inputs.source_run_id }}
-          name: GKI 6.1 BakaSU (${{ inputs.release_type }})
-          prerelease: ${{ steps.r_type.outputs.prerelease == 'true' }}
+          tag_name: BakaSU-run-${{ inputs.source_run_id }}
+          name: ${{ steps.package.outputs.title }}
+          target_commitish: ${{ steps.source.outputs.sha }}
+          prerelease: ${{ inputs.release_type == 'Pre-Release' }}
           body: |
-            - **Tested:** Xiaomi 14T Pro (Rothko)
-            - **Kernel:** GKI 6.1.177 BakaSU
-            - **Features:** SUSFS + Re-Kernel + ZRAM + BBG + CVE + NoMount
-            
-            ✅ *File zip ini sudah terekstrak dengan benar dan merupakan AnyKernel3 asli. Siap di-flash via Kernel Flasher / Horizon Kernel Flasher.*
-          files: BakaSU-Rothko-GKI-6.1-ReadyToFlash.zip
+            Original AnyKernel3 ZIP from successful build run #${{ inputs.source_run_id }}.
+            Unmodified package. Back up your boot image and verify device compatibility before flashing.
+          files: release-files/*AnyKernel3.zip
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
