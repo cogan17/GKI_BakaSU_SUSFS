@@ -20,43 +20,45 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: read
 
     steps:
       - name: Download Artifact berdasarkan Run ID
-        uses: dawidd6/action-download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          run_id: ${{ inputs.source_run_id }}
+          run-id: ${{ inputs.source_run_id }}
           path: downloaded_artifacts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Ekstrak & Repack Artifact
         run: |
           echo "Mencari file zip di dalam artifact..."
           cd downloaded_artifacts
-          
+              
           ZIP_FILE=$(find . -name "*.zip" | head -n 1)
-          
+              
           if [ -z "$ZIP_FILE" ]; then
             echo "Error: Tidak ditemukan file .zip di dalam artifact!"
             exit 1
           fi
-          
+              
           echo "Ditemukan file ZIP artifact: $ZIP_FILE"
           echo "Mengekstrak file..."
-          
+              
           mkdir -p extracted_temp
           unzip -q "$ZIP_FILE" -d extracted_temp/
-          
+              
           echo "Mencari anykernel.sh di hasil ekstraksi..."
           AK3_DIR=$(dirname $(find extracted_temp -name "anykernel.sh" | head -n 1))
-          
+              
           if [ -z "$AK3_DIR" ] || [ "$AK3_DIR" == "." ]; then
              echo "Error: anykernel.sh tidak ditemukan. Pastikan artifact berisi file AnyKernel3."
              exit 1
           fi
-          
+              
           echo "Folder AnyKernel3 ditemukan di: $AK3_DIR"
           cd "$AK3_DIR"
-          
+              
           echo "Membungkus ulang (Repack) ke format AnyKernel3 standar..."
           zip -r9 $GITHUB_WORKSPACE/BakaSU-Rothko-GKI-6.1-ReadyToFlash.zip * -x .git README.md *placeholder
           echo "Repack selesai!"
