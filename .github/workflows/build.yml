@@ -1786,17 +1786,14 @@ jobs:
             done
           fi
 
-      # ==================== Upload build artifacts ====================
-      # AnyKernel3 packages are already zip files; upload-artifact adds another zip container
-      # compression-level=0 disables outer compression to avoid recompressing AK3 packages
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v6
+      # ==================== Upload original flashable ZIP ====================
+      # upload-artifact@v7 archive:false delivers the original ZIP without wrapping it.
+      - name: Upload ready-to-flash ZIP
+        uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.BUILD_VARIANT }}_kernel-${{ env.CONFIG }}
-          path: |
-            *AnyKernel3.zip
-#            *.img
-          compression-level: 0
+          path: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-AnyKernel3.zip
+          if-no-files-found: error
+          archive: false
 
       # ==================== Upload rejected patch files ====================
       - name: Upload rejected patch files
