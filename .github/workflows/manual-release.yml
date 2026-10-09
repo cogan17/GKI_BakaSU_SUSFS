@@ -81,7 +81,7 @@ jobs:
             - **Kernel:** GKI 6.1.177 BakaSU
             - **Features:** SUSFS + Re-Kernel + ZRAM + BBG + CVE + NoMount
             
-            ✅ *File zip ini sudah terekstrak dengan benar dan merupakan AnyKernel3 asli. Siap di-flash via Kernel Flasher / FKM.*
+            ✅ *File zip ini sudah terekstrak dengan benar dan merupakan AnyKernel3 asli. Siap di-flash via Kernel Flasher / Horizon Kernel Flasher.*
           files: BakaSU-Rothko-GKI-6.1-ReadyToFlash.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
