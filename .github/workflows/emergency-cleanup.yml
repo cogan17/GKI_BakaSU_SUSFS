@@ -61,7 +61,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ==================== Handle Normal type ====================
-      - name: Handle Normal: mark release verified
+      - name: 'Handle Normal: mark release verified'
         if: inputs.issue_type == 'Normal'
         run: |
           cat > new_body.md << 'EOF'
@@ -75,7 +75,7 @@ jobs:
 
           if [ -n "${{ inputs.reference }}" ]; then
             echo "" >> new_body.md
-            echo "**Reference / Reference**: ${{ inputs.reference }}" >> new_body.md
+            echo "**Reference**: ${{ inputs.reference }}" >> new_body.md
           fi
 
           echo "" >> new_body.md
@@ -105,7 +105,7 @@ jobs:
 
           if [ -n "${{ inputs.reference }}" ]; then
             echo "" >> new_body.md
-            echo "**Reference / Reference**: ${{ inputs.reference }}" >> new_body.md
+            echo "**Reference**: ${{ inputs.reference }}" >> new_body.md
           fi
 
           echo "" >> new_body.md
@@ -121,7 +121,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ==================== Handle Critical type ====================
-      - name: Handle Critical: delete and recreate release
+      - name: 'Handle Critical: delete and recreate release'
         if: inputs.issue_type == 'Critical'
         run: |
           ORIGINAL_TITLE=$(cat original_title.txt)
@@ -142,7 +142,7 @@ jobs:
 
           if [ -n "${{ inputs.reference }}" ]; then
             echo "" >> new_body.md
-            echo "**Reference / Reference**: ${{ inputs.reference }}" >> new_body.md
+            echo "**Reference**: ${{ inputs.reference }}" >> new_body.md
           fi
 
           echo "" >> new_body.md
@@ -179,4 +179,4 @@ jobs:
           echo "📌 Issue type: ${{ inputs.issue_type }}"
           echo "📝 Reference information: ${{ inputs.reference || 'None' }}"
           echo "=========================================="
-          echo "✅ Emergency cleanup complete！"
+          echo "✅ Emergency cleanup complete!"
