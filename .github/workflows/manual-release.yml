@@ -60,9 +60,9 @@ jobs:
           prerelease: ${{ steps.r_type.outputs.prerelease == 'true' }}
           body: |
             🚀 **Manual Release from Run ID: ${{ inputs.source_run_id }}**
-            - **Device:** Xiaomi 14T Pro (Rothko)
+            - **Tested:** Xiaomi 14T Pro (Rothko)
             - **Kernel:** GKI 6.1.177 BakaSU
-            - **Features:** SUSFS + Re-Kernel (proc_ops fixed)
+            - **Features:** SUSFS + Re-Kernel + ZRAM + BBG + CVE
             
             ✅ *File zip ini sudah di-repack ke format AnyKernel3 asli. Siap di-flash via Kernel Flasher / FKM.*
           files: BakaSU-Rothko-GKI-6.1-ReadyToFlash.zip
