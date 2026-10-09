@@ -1,152 +1,129 @@
 [中文](README.md) | [English](README.en.md) | [Bahasa Indonesia](README.id.md)
+
 <div align="center">
 
-GKI BakaSU SUSFS
+# GKI BakaSU SUSFS
 
-Build Android GKI kernels with GitHub Actions, integrated with BakaSU and SUSFS.
+Build Android GKI kernels based on GitHub Actions, integrating BakaSU and SUSFS.
 
-![Release](https://img.shields.io/github/v/release/coolzyd9107/GKIBakaSUSUSFS?label=Release&style=flat-square&logo=github&logoColor=white&color=2ea44f) ![Kernel Build](https://github.com/zhuzhuzihan/GKIBakaSUSUSFS/actions/workflows/main.yml/badge.svg) ![Telegram](https://img.shields.io/static/v1?label=Telegram&message=Channel&color=0088cc) ![BakaSU](https://img.shields.io/badge/KernelSU-BakaSU-5AA300?style=flat-square) ![SUSFS](https://img.shields.io/badge/Filesystem-SUSFS-E67E22?style=flat-square)
+[![Release](https://img.shields.io/github/v/release/coolzyd9107/GKI_BakaSU_SUSFS?label=Release&style=flat-square&logo=github&logoColor=white&color=2ea44f)](https://github.com/zhuzhuzihan/GKI_BakaSU_SUSFS/releases)
+[![Build Kernel](https://github.com/zhuzhuzihan/GKI_BakaSU_SUSFS/actions/workflows/main.yml/badge.svg)](https://github.com/zhuzhuzihan/GKI_BakaSU_SUSFS/actions/workflows/main.yml)
+[![Telegram](https://img.shields.io/static/v1?label=Telegram&message=Channel&color=0088cc)](https://t.me/BakaSUKernelBuilds)
+[![BakaSU](https://img.shields.io/badge/KernelSU-BakaSU-5AA300?style=flat-square)](https://github.com/Baka-SU/BakaSU)
+[![SUSFS](https://img.shields.io/badge/Filesystem-SUSFS-E67E22?style=flat-square)](https://gitlab.com/simonpunk/susfs4ksu)
 
 </div>
 
-简体中文 | English | Bahasa Indonesia
+## Project Description
 
-Project Overview
+This repository provides Actions cloud build workflows to generate AnyKernel3 installation packages based on Android GKI KMI and security patch levels. Standard builds use BakaSU while allowing you to optionally enable other features in the workflow configuration; you can also select Clean build to generate a kernel without KernelSU, SUSFS, and optional feature patches.
 
-This repository provides a cloud-based GitHub Actions workflow for building Android GKI kernels and packaging them as AnyKernel3 flashable ZIPs according to the Android GKI KMI and security patch level.
+Kernel versions and release revisions are read from the JSON matrix under `data/android*/`, and updated periodically by the data synchronization workflow.
 
-Standard builds integrate BakaSU. Additional optional features can be enabled through workflow settings. You can also select Clean build to build a kernel without KernelSU, SUSFS, or optional feature patches.
+## Important Notice
 
-Kernel versions and release revisions are retrieved from JSON matrices under data/android*/. These data files are periodically updated by the data synchronization workflow.
+Recently we performed a major refactoring, which led to a drastic increase in build steps and artifacts, resulting in long execution times for kernel build workflows covering all kernel versions. Therefore, we will no longer regularly run kernel builds and releases for all versions whenever there is a major update to BakaSU.
 
-Important Notice
+This measure aims to reduce long-term consumption of GitHub Actions public resources. Each user is encouraged to fork this repository and independently build a single kernel matching their exact required kernel version in their forked repository, significantly reducing computational resource abuse. We apologize for any inconvenience caused. For details on how to use workflows in this repository and its forks, please refer to the relevant section in README.md.
 
-Following a major restructuring, the number of build steps and generated artifacts has increased significantly. Building and releasing every supported kernel version now takes an excessive amount of time.
+## Supported KMI
 
-Therefore, we will no longer routinely run builds and publish releases for all kernel versions, including after major BakaSU updates. This change is intended to reduce prolonged consumption of GitHub Actions public runner resources and discourage excessive use of computing resources.
+| Android KMI | Kernel Series | `build_target` Option |
+|---|---|---|
+| Android 12 | 5.10 | `android12-5.10` |
+| Android 13 | 5.10 | `android13-5.10` |
+| Android 13 | 5.15 | `android13-5.15` |
+| Android 14 | 5.15 | `android14-5.15` |
+| Android 14 | 6.1 | `android14-6.1` |
+| Android 15 | 6.6 | `android15-6.6` |
+| Android 16 | 6.12 | `android16-6.12` |
+| Android 17 | 6.18 | `android17-6.18` |
 
-Users are encouraged to fork this repository and build only the specific kernel version they need in their own fork. This significantly reduces build time and resource consumption.
+Both 5.10 and 5.15 correspond to multiple Android KMI. Especially for Android 13 and Android 14 which share the same kernel version for 5.15, KMI cannot be automatically determined solely by `5.15.xxx`; you must manually select the corresponding Android version when building a specified version. Android 17 / 6.18 currently supports basic builds, with some auxiliary components automatically skipped based on upstream support status.
 
-We apologize for any inconvenience. Please refer to the relevant sections of this README for instructions on using the original repository and forked repositories.
+## Running Builds
 
-Supported KMI Targets
-Android KMI	Kernel Series	build_target Option
-Android 12	5.10	android12-5.10
-Android 13	5.10	android13-5.10
-Android 13	5.15	android13-5.15
-Android 14	5.15	android14-5.15
-Android 14	6.1	android14-6.1
-Android 15	6.6	android15-6.6
-Android 16	6.12	android16-6.12
-Android 17	6.18	android17-6.18
+1. Open the repository's [Actions](https://github.com/zhuzhuzihan/GKI_BakaSU_SUSFS/actions) page, select the **Build Kernel** workflow and click **Run workflow**.
+2. In `build_target`, select a KMI or choose `all` to build all targets. This is a single-choice option; if you need to build multiple targets but not all, run each target separately.
+3. Set the feature options and `release_type` as needed, then start the workflow.
+4. After the build completes, download artifacts from the run details page; you can also download them from the Releases page when creating a release.
 
-Kernel series 5.10 and 5.15 correspond to multiple Android KMI targets. In particular, Android 13 and Android 14 both use kernel series 5.15, so the KMI cannot be determined from a version number such as 5.15.xxx alone. When building a specific version, you must manually select the correct Android version.
+### Filtering by Kernel Version
 
-Android 17 / 6.18 currently supports basic builds. Some auxiliary components are automatically skipped depending on upstream support.
+After enabling `build_kernel_version`, version filtering takes precedence over regular version switches. `kernel_version_filter` accepts full versions or series wildcards:
 
-Running a Build
-Open the repository's Actions page.
-Select the Build Kernel workflow and click Run workflow.
-Choose a KMI target under build_target, or select all to build every target. This is a single-choice option. To build multiple targets without building all of them, run the workflow separately for each target.
-Configure the optional features and release_type as needed.
-Start the workflow.
-Once the build finishes, download the artifacts from the run's Artifacts section. If a Release was created, the packages can also be downloaded from the Releases page.
-Filtering by Kernel Version
+| Input | Function |
+|---|---|
+| `6.6.66` | Build `6.6.66` from the corresponding KMI version data |
+| `6.6.X` or `6.6.x` | Build all `6.6` sub-versions in the KMI data |
 
-Enable build_kernel_version to filter builds by kernel version. This filter takes precedence over the regular version-selection options.
+Selection Rules:
 
-The kernel_version_filter parameter accepts either a complete version number or a kernel-series wildcard.
+- 5.10: `kernel_android_version` must be set to `android12` or `android13`.
+- 5.15: Must be set to `android13` or `android14`.
+- 6.1, 6.6, 6.12, 6.18: The workflows use Android 14, 15, 16, and 17 KMI respectively, no manual selection required.
 
-Input	Description
-6.6.66	Build version 6.6.66 from the selected KMI's version data
-6.6.X or 6.6.x	Build all 6.6 patch versions available in the selected KMI's data
+Patch levels, release revisions, and LTS versions are read from the corresponding JSON data. Specifying a version build will not create a GitHub Release, even if `release_type` is set to pre-release or release.
 
-Selection rules:
+### Release Types
 
-5.10: Set kernel_android_version to android12 or android13.
-5.15: Set kernel_android_version to android13 or android14.
-6.1, 6.6, 6.12, and 6.18: The workflow automatically uses the corresponding Android 14, 15, 16, and 17 KMI targets. Manual Android version selection is unnecessary.
+Regular version build `release_type` options:
 
-The patch level, release revision, and LTS version are obtained from the corresponding JSON data.
+- `Actions`: Keep Actions run artifacts only, do not create a Release. Default.
+- `Pre-Release`: Create a pre-release after a successful build in this repository.
+- `Release`: Create an official release after a successful build in this repository.
 
-A build filtered to a specific kernel version will not create a GitHub Release, even if release_type is set to pre-release or release.
+Fork repositories only generate Actions artifacts and will not publish Releases to the upstream repository.
 
-Release Types
+## BakaSU Branch
 
-For regular builds, release_type supports the following options:
+When `kernelsu_branch` is left blank, `main` is used. You can also enter a BakaSU remote branch name, or a full 40-character commit SHA. The workflow will resolve and lock in the commit corresponding to that branch at the start of the build, so each KMI in the same run uses the same code; release notes will link to the actually built BakaSU commit.
 
-Actions: Keep the build artifacts in GitHub Actions without creating a Release. This is the default.
-Pre-Release: Create a pre-release after a successful build in the original repository.
-Release: Create a full release after a successful build in the original repository.
+## Optional Build Features
 
-Forked repositories only generate Actions artifacts and will not publish Releases to the upstream repository.
+| Option | Description |
+|---|---|
+| `clean_build` | Do not integrate BakaSU, SUSFS, and optional feature patches. |
+| `cancel_susfs` | Disable SUSFS integration. SUSFS is enabled by default; Android 17 / 6.18 has no upstream branch yet and will be skipped automatically. |
+| `use_zram` | Enable ZRAM enhancements (LZ4KD). Android 17 / 6.18 has no corresponding patch yet and will be skipped automatically. |
+| `use_bbg` | Enable BBG anti-brick/anti-reboot patches. |
+| `use_rekernel` | Enable Re-Kernel driver, features are still testing. Temporarily skipped on Android 17 / 6.18 until this repository adapts to upstream's new source layout. |
+| `cve_2026_43499_patch` | Apply CVE-2026-43499 fix chain, enabled by default; 6.18 has no adaptation patch in this repository yet and will be skipped automatically. |
+| `build_bypass` | Additionally build a Bypass Image, included in the installation package alongside the regular Image. |
+| `droidspaces` | Select Droidspaces container patch: `off`, `678`, `123`, or `345`. 6.12 and above use upstream generic patches. |
+| `droidspaces_ntsync` | Enable NTSync in supported combinations, requires Droidspaces to be enabled simultaneously. Currently no Android 17 / 6.18 patch available, this combination will be skipped automatically. |
 
-BakaSU Branch
+Bypass mode is used to troubleshoot kernel module version compatibility issues, not to bypass root detection. When enabled, a second full compilation is performed, increasing build time. Follow the installation script prompt to choose between regular Image or Bypass Image when flashing.
 
-If kernelsu_branch is left empty, the workflow uses main.
+Droidspaces patches are experimental, different devices and kernel versions may require trying different slots. Android 16 / 6.12 and Android 17 / 6.18 only have one slot patch type, select any non-`off` value. Upstream lacks NTSync compatibility patches for Android 14 / 5.15; this combination will cause the build to fail, please keep it disabled. Android 17 / 6.18 will automatically skip if the NTSync patch is missing.
 
-You can also specify a remote BakaSU branch name or a full 40-character commit SHA. At the beginning of the build, the workflow resolves the selected branch to a specific commit and pins it for the entire run. This ensures that all KMI targets in the same run use the same BakaSU source revision.
+## Build Artifacts
 
-The release notes include a link to the actual BakaSU commit used for the build.
+Artifact names include the Android KMI, full kernel version, and OS security patch level; upstream revisions will also be appended if present. For example:
 
-Optional Build Features
-Option	Description
-clean_build	Build without BakaSU, SUSFS, or optional feature patches.
-cancel_susfs	Disable SUSFS integration. SUSFS is enabled by default. Android 17 / 6.18 automatically skips it because no upstream branch is currently available.
-use_zram	Enable ZRAM enhancements using LZ4KD. Automatically skipped on Android 17 / 6.18 because the corresponding patches are unavailable.
-use_bbg	Enable the BBG anti-brick patch.
-use_rekernel	Enable the Re-Kernel driver. This feature is still experimental. Android 17 / 6.18 skips it temporarily while this repository adapts to the upstream source layout.
-cve_2026_43499_patch	Apply the CVE-2026-43499 fix chain. Enabled by default. Automatically skipped on 6.18 because an adapted patch is not yet available in this repository.
-build_bypass	Build an additional Bypass Image and include it alongside the regular Image in the installation package.
-droidspaces	Select the Droidspaces container patch: off, 678, 123, or 345. Android 16 / 6.12 and newer use the upstream generic patch.
-droidspaces_ntsync	Enable NTSync for supported configurations. Droidspaces must also be enabled. Automatically skipped on Android 17 / 6.18 because the required patch is unavailable.
-
-Bypass mode is intended for troubleshooting kernel module compatibility issues, not for bypassing root detection. Enabling it triggers a second full compilation and increases build time.
-
-During installation, follow the installer script's instructions to select either the regular Image or the Bypass Image.
-
-Droidspaces patches are experimental. Different devices and kernel versions may require testing different patch slots.
-
-Android 16 / 6.12 and Android 17 / 6.18 support only one patch slot. Selecting any value other than off is sufficient.
-
-The upstream source does not provide an NTSync compatibility patch for Android 14 / 5.15. Enabling this combination will cause the build to fail, so keep NTSync disabled for this target. On Android 17 / 6.18, NTSync is automatically skipped when its patch is unavailable.
-
-Build Artifacts
-
-Artifact filenames include the Android KMI, full kernel version, and OS security patch level. When an upstream revision is available, it is also included in the filename.
-
-Example:
-
+```text
 android14-5.15.148-2024-05-r25-BakaSU-AnyKernel3.zip
 
+## Build Artifacts
 
-When Bypass mode is enabled, the package contains both Image and Bypass-Image.
+After enabling Bypass, both the regular `Image` and `Bypass-Image` are included in the installation package. Choose artifacts matching your device's Android KMI and kernel branch; back up your original boot image before flashing, and ensure your device has a working recovery method.
 
-Choose an artifact that matches your device's Android KMI and kernel branch. Before flashing, back up the stock Boot image and ensure that a recovery method is available in case anything goes wrong.
+## Stock Config
 
-Stock Config
+If `config/stock_defconfig` exists in the repository, the build will automatically use it for `/proc/config.gz` config masking; if the file does not exist, this step is skipped. You can extract `/proc/config.gz` from the device's current official kernel, decompress it, place it in this directory, and name it `stock_defconfig`.
 
-If config/stock_defconfig exists in the repository, the build automatically uses it for /proc/config.gz configuration spoofing. This step is skipped if the file is absent.
+## GKI Data Synchronization
 
-You can obtain /proc/config.gz from your device's current stock kernel, decompress it, and place the resulting configuration file at:
+The [Update GKI Version Data](.github/workflows/update-gki-data.yml) workflow runs automatically every Monday at UTC 08:00, and can also be triggered manually. The workflow runs sync tests, updates JSON, validates the build matrix, and commits data changes.
 
-config/stock_defconfig
+## Acknowledgments
 
-GKI Data Synchronization
+- [zzh20188](https://github.com/zzh20188): Former upstream GKI build repository author. This repository has now separated from the fork network, and zzh20188/GKI_KernelSU_SUSFS is no longer the upstream repository for this repo.
+- [coolzyd9107](https://github.com/coolzyd9107): Maintainer of this repository.
+- [zhuzhuzihan](https://github.com/zhuzhuzihan): Workflow fixes and Telegram Bot development & maintenance.
+- [TanakaLun](https://github.com/TanakaLun): Workflow fixes and feature improvements.
+- [YC酱luyancib](https://github.com/luyanci): Telegram Bot and build workflow suggestions.
+- [AlexLiuDev233](https://github.com/AlexLiuDev233): Workflow bug fixes.
+- [cctv18](https://github.com/cctv18): Workflow, 6.12 support, and SUSFS issue fix suggestions.
 
-The Update GKI Version Data workflow runs automatically every Monday at 08:00 UTC. It can also be triggered manually.
-
-The workflow runs synchronization tests, updates the JSON data, validates the build matrix, and commits the resulting data changes.
-
-Acknowledgments
-zzh20188: Original author of the former upstream GKI build repository. This repository is no longer part of that fork network, and zzh20188/GKI_KernelSU_SUSFS is no longer its upstream repository.
-coolzyd9107: Maintainer of this repository.
-zhuzhuzihan: Workflow fixes and Telegram Bot development and maintenance.
-TanakaLun: Workflow fixes and feature improvements.
-YC酱luyancib: Telegram Bot and build process suggestions.
-AlexLiuDev233: Workflow bug fixes.
-cctv18: Workflow improvements, Android 6.12 support, and suggestions for fixing SUSFS issues.
-
-For new build notifications and important updates, visit the Telegram channel.
-
-For the official BakaSU community, visit BakaSU_Grp.
+For new builds and major change notifications, see the [Telegram Channel](https://t.me/BakaSUKernelBuilds); for the official BakaSU channel, see [BakaSU_Grp](https://t.me/BakaSU_Grp).
