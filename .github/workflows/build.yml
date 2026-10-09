@@ -1018,13 +1018,13 @@ jobs:
           disable_config() {
             local cfg="$1"
             if grep -q "^${cfg}=n" "$DEFCONFIG"; then
-              echo "  已Disabled: $cfg"
+              echo "  Disabled: $cfg"
             elif grep -q "^${cfg}=y" "$DEFCONFIG"; then
               sed -i "s/^${cfg}=y$/${cfg}=n/" "$DEFCONFIG"
               echo "  Turned off: $cfg"
             else
               echo "# ${cfg} is not set" >> "$DEFCONFIG"
-              echo "  Added并Disabled: $cfg"
+              echo "  Added and disabled: $cfg"
             fi
           }
 
