@@ -66,10 +66,10 @@ on:
         required: false
         type: string
       build_time:
-        description: "Custom build time (optional; N or blank means current UTC)"
+        description: "Build time: N = current UTC; or enter e.g. Sat Oct 10 19:10:00 UTC 2026"
         required: false
         type: string
-        default: "Sun Dec 01 08:10:00 UTC 2024"
+        default: "N"
 
       # ==================== Feature toggles ====================
       clean_build:
