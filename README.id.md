@@ -1,30 +1,26 @@
-[中文](README.md) | [English](README.en.md) | [Bahasa Indonesia](README.id.md)
+[简体中文](README.md) | [English](README.en.md) | [**Bahasa Indonesia**](README.id.md)
 
-<div align="center">
+# GKI BakaSU SUSFS · Fork Cogan
 
-# GKI BakaSU SUSFS
+> Fork independen dari **[proyek asli coolzyd9107](https://github.com/coolzyd9107/GKI_BakaSU_SUSFS)**, dikelola oleh **[Cogan](https://github.com/cogan17)**. Repository ini **bukan** repository resmi pengembang utama.
 
-Membangun kernel Android GKI berbasis GitHub Actions, mengintegrasikan BakaSU dan SUSFS.
+[![Rilis](https://img.shields.io/github/v/release/cogan17/GKI_BakaSU_SUSFS?include_prereleases&label=Release)](https://github.com/cogan17/GKI_BakaSU_SUSFS/releases)
+[![Custom Build](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/kernel-custom.yml/badge.svg)](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/kernel-custom.yml)
+[![Lisensi](https://img.shields.io/github/license/cogan17/GKI_BakaSU_SUSFS)](LICENSE)
 
-[![Release](https://img.shields.io/github/v/release/coolzyd9107/GKI_BakaSU_SUSFS?label=Release&style=flat-square&logo=github&logoColor=white&color=2ea44f)](https://github.com/zhuzhuzihan/GKI_BakaSU_SUSFS/releases)
-[![Build Kernel](https://github.com/zhuzhuzihan/GKI_BakaSU_SUSFS/actions/workflows/main.yml/badge.svg)](https://github.com/zhuzhuzihan/GKI_BakaSU_SUSFS/actions/workflows/main.yml)
-[![Telegram](https://img.shields.io/static/v1?label=Telegram&message=Channel&color=0088cc)](https://t.me/BakaSUKernelBuilds)
-[![BakaSU](https://img.shields.io/badge/KernelSU-BakaSU-5AA300?style=flat-square)](https://github.com/Baka-SU/BakaSU)
-[![SUSFS](https://img.shields.io/badge/Filesystem-SUSFS-E67E22?style=flat-square)](https://gitlab.com/simonpunk/susfs4ksu)
-
-</div>
+**Tautan cepat:** [Actions](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions) · [Custom Build](.github/workflows/kernel-custom.yml) · [Build Kernel](.github/workflows/main.yml) · [Manual Release](.github/workflows/manual-release.yml) · [Releases](https://github.com/cogan17/GKI_BakaSU_SUSFS/releases)
 
 ## Deskripsi Proyek
 
-Repository ini menyediakan alur kerja (*workflow*) cloud build Actions untuk menghasilkan paket instalasi AnyKernel3 berdasarkan KMI GKI Android dan level security patch. Build standar menggunakan BakaSU sekaligus memungkinkan Anda mengaktifkan opsi fitur tambahan lainnya secara mandiri di konfigurasi *workflow*; Anda juga dapat memilih *Clean build* untuk menghasilkan kernel yang tidak mengintegrasikan KernelSU, SUSFS, maupun patch fitur opsional.
+Repository ini membangun kernel Android GKI melalui GitHub Actions dengan **BakaSU + SUSFS** dan integrasi opsional seperti NoMount, ZRAM, BBG, serta Re-Kernel. Hasil build yang sukses menyediakan paket **AnyKernel3 ZIP**. Pilih `clean_build` untuk mengecualikan BakaSU, SUSFS, dan patch opsional.
 
-Versi kernel dan revisi rilis dibaca dari matriks JSON di bawah `data/android*/`, dan diperbarui secara berkala oleh *workflow* sinkronisasi data.
+**GKI/KMI tidak sama dengan versi Android OS yang terpasang.** Contohnya, perangkat Android 16 dapat memakai Android 14 GKI / Linux 6.1 jika KMI perangkat memang kompatibel. Pastikan KMI, kernel bawaan, dan kompatibilitas perangkat sebelum flashing; nomor versi Android yang sama saja tidak cukup.
 
 ## Pemberitahuan Penting
 
-Baru-baru ini kami melakukan refaktorisasi besar-besaran, yang mengakibatkan peningkatan drastis pada langkah build dan artefak. Hal ini membuat waktu pengerjaan *workflow* build kernel yang mencakup seluruh versi kernel menjadi sangat lama. Oleh karena itu, kami tidak lagi menjalankan build dan rilis (*Release*) untuk seluruh versi kernel secara berkala setiap kali ada pembaruan besar pada BakaSU.
+Ini adalah **fork Cogan yang dikelola secara independen**. Proyek asli dan dokumentasi Mandarin berasal dari [coolzyd9107/GKI_BakaSU_SUSFS](https://github.com/coolzyd9107/GKI_BakaSU_SUSFS). Fork Cogan menambahkan perbaikan tampilan versi, workflow build, distribusi ZIP, dan dokumentasi. Catatan rilis di fork ini **bukan** pengumuman resmi upstream.
 
-Langkah ini bertujuan untuk mengurangi penggunaan jangka panjang sumber daya publik GitHub Actions. Setiap pengguna disarankan untuk melakukan *fork* repository ini dan membangun sendiri kernel tunggal di repository *fork* tersebut agar sama persis dengan versi kernel yang dibutuhkannya, sehingga sangat mengurangi fenomena penyalahgunaan daya komputasi. Atas ketidaknyamanan ini kami mohon maaf. Untuk detail mengenai cara menggunakan *workflow* repository ini beserta repository *fork*-nya, silakan lihat bagian terkait di `README.md`.
+**Batasan dukungan:** Android 17 / 6.18 masih memiliki fitur terbatas; patch yang belum tersedia dari upstream akan dilewati. Kernel 5.10 dan 5.15 memiliki beberapa KMI Android; pastikan kamu memilih KMI yang tepat.
 
 ## KMI yang Didukung
 
@@ -43,37 +39,30 @@ Versi 5.10 dan 5.15 sama-sama bersesuaian dengan beberapa KMI Android. Khususnya
 
 ## Menjalankan Build
 
-1. Buka halaman [Actions](https://github.com/zhuzhuzihan/GKI_BakaSU_SUSFS/actions) di repository Anda, pilih *workflow* **Build Kernel** (*构建内核*), lalu klik **Run workflow**.
-2. Pada `build_target`, pilih salah satu KMI atau pilih `all` untuk membangun seluruh target. Pilihan ini berupa opsi tunggal (*single choice*); jika Anda ingin membangun beberapa target tetapi tidak semuanya, jalankan masing-masing target secara terpisah.
-3. Atur opsi fitur (*feature options*) dan `release_type` sesuai kebutuhan, lalu jalankan *workflow*.
-4. Setelah build selesai, unduh artefak (*Artifacts*) dari halaman detail eksekusi; Anda juga dapat mengunduhnya dari halaman *Releases* saat membuat *Release*.
+### 1. Android Kernel Build - Custom (disarankan)
 
-### Penyaringan Berdasarkan Versi Kernel
+1. Buka **[Custom Build](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/kernel-custom.yml)**, pilih `main`, kemudian **Run workflow**.
+2. Isi `android_version`, `kernel_version`, `sub_level`, `os_patch_level` (misalnya `lts`), dan `revision`.
+3. Jika perlu, isi `version` (misalnya `Cogan`), `kernelsu_branch` (kosong untuk branch default BakaSU), dan `build_time` (`N` atau kosong untuk UTC saat build).
+4. Pilih fitur sesuai perangkat, jalankan build, lalu unduh `*-AnyKernel3.zip` pada **Artifacts** dari run yang sukses.
 
-Setelah mengaktifkan `build_kernel_version`, penyaringan versi akan diprioritaskan di atas tombol versi biasa. `kernel_version_filter` menerima versi lengkap atau wildcard seri:
+**Contoh Cogan r7:** `android14` / `6.1` / `177` / `lts` / `r7`, label kustom `Cogan`. Ini bukan konfigurasi flashing yang berlaku untuk semua perangkat.
 
-| Masukan | Fungsi |
-|---|---|
-| `6.6.66` | Membangun `6.6.66` dari data versi KMI terkait |
-| `6.6.X` atau `6.6.x` | Membangun seluruh sub-versi `6.6` dalam data KMI |
+### 2. Build Kernel (matriks / filter versi)
 
-Aturan Pemilihan:
+Pada **[Build Kernel](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/main.yml)**, pilih satu `build_target` atau `all`. Kamu juga dapat mengaktifkan `build_kernel_version` dan memasukkan `6.6.66` atau filter seperti `6.6.X`. Untuk 5.10 / 5.15, isi pula `kernel_android_version`.
 
-- 5.10: `kernel_android_version` wajib memilih `android12` atau `android13`.
-- 5.15: Wajib memilih `android13` atau `android14`.
-- 6.1, 6.6, 6.12, 6.18: *Workflow* masing-masing menggunakan KMI Android 14, 15, 16, dan 17, tanpa perlu pemilihan manual.
+**Perhatian:** Workflow utama masih memakai nilai default `build_time` yang lama. Masukkan `N` agar menggunakan waktu UTC terbaru. Pada Custom Build, default sudah `N`.
 
-Level *patch*, revisi rilis (*release revision*), dan versi LTS dibaca dari data JSON terkait. Build versi tertentu tidak akan membuat GitHub Release, meskipun `release_type` dipilih sebagai *pre-release* atau rilis resmi.
+### 3. Manual Release From Run
 
-### Jenis Rilis (Release Types)
+Gunakan **[Manual Release From Run](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/manual-release.yml)** untuk menerbitkan ZIP AnyKernel3 asli dari run yang sukses:
 
-Pilihan `release_type` untuk build versi biasa:
+1. Buka workflow pada branch `main`.
+2. Masukkan angka `source_run_id` dan pilih `Pre-Release` atau `Release`.
+3. Workflow memvalidasi run sumber, integritas ZIP, dan file wajib, lalu melampirkan ZIP asli ke GitHub Releases tanpa repack.
 
-- `Actions`: Hanya menyimpan artefak eksekusi Actions, tidak membuat Release. Nilai default.
-- `Pre-Release`: Membuat prarilis (*pre-release*) setelah build berhasil di repository ini.
-- `Release`: Membuat rilis resmi setelah build berhasil di repository ini.
-
-Repository *fork* hanya menghasilkan artefak Actions dan tidak akan mempublikasikan Release ke repository hulu (*upstream*).
+**Penting:** Job rilis otomatis pada workflow utama saat ini dibatasi untuk repository lain; di fork Cogan gunakan Manual Release. Contoh: r7 [Run 38020806221](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/runs/38020806221) → [Release Cogan r7](https://github.com/cogan17/GKI_BakaSU_SUSFS/releases/tag/BakaSU-run-38020806221).
 
 ## Cabang BakaSU (BakaSU Branch)
 
@@ -92,6 +81,10 @@ Ketika `kernelsu_branch` dikosongkan, maka `main` yang akan digunakan. Anda juga
 | `build_bypass` | Membangun Bypass Image tambahan, yang disertakan dalam paket instalasi bersama Image biasa. |
 | `droidspaces` | Memilih patch container Droidspaces: `off`, `678`, `123`, atau `345`. Versi 6.12 ke atas menggunakan patch generik hulu. |
 | `droidspaces_ntsync` | Mengaktifkan NTSync dalam kombinasi yang didukung, mengharuskan Droidspaces diaktifkan secara bersamaan. Saat ini belum ada patch Android 17 / 6.18, kombinasi ini akan dilewati secara otomatis. |
+| `use_nomount` | Integrasi NoMount. **Batasan saat ini:** workflow build yang digunakan bersama tetap menjalankan setup NoMount pada build non-clean meskipun opsi diatur ke `false`. Jangan mengandalkan opsi ini untuk menonaktifkannya sebelum workflow diperbaiki. |
+
+**Tampilan versi:** Untuk Android 14 GKI / Linux 6.1 dengan nama kustom, fork Cogan memperpendek metadata compiler yang terlihat di Settings HyperOS tanpa menghilangkan struktur versi yang diperlukan parser. Waktu build otomatis menggunakan format `YYYY-MM-DD HH:mm:ss UTC`. Tampilan bisa berbeda antardevice.
+
 
 Mode Bypass digunakan untuk menyelidiki masalah kompatibilitas versi modul kernel, bukan untuk melewati deteksi root. Saat diaktifkan, kompilasi penuh kedua akan dilakukan, yang menambah waktu build. Ikuti petunjuk skrip instalasi untuk memilih Image biasa atau Bypass Image saat melakukan flashing.
 
@@ -99,11 +92,16 @@ Patch Droidspaces bersifat eksperimental, perangkat dan versi kernel yang berbed
 
 ## Artefak Build
 
-Nama artefak mencakup KMI Android, versi kernel lengkap, dan level security patch OS; revisi hulu juga akan disertakan jika ada. Contoh:
+Custom Build yang sukses menyediakan `*-AnyKernel3.zip` siap-flash. Artefak build saat ini tidak memerlukan ekstraksi ZIP kedua atau repack manual. Jika `build_bypass` diaktifkan, paket dapat memuat `Bypass-Image` tambahan.
 
-android14-5.15.148-2024-05-r25-BakaSU-AnyKernel3.zip
+### Contoh teruji: Cogan r7
 
-Setelah mengaktifkan Bypass, paket instalasi akan mencakup `Image` biasa dan `Bypass-Image`. Pilih artefak yang sesuai dengan KMI Android dan cabang kernel perangkat Anda; lakukan *backup* image boot bawaan sebelum melakukan flashing, dan pastikan perangkat Anda memiliki metode pemulihan (*recovery*) yang berfungsi.
+- **Kernel:** `6.1.177-android14-11-Cogan` (Android 14 GKI / 6.1.177 LTS).
+- **Perangkat uji:** Xiaomi 14T Pro (`2407FPN8EG`), Android 16 / HyperOS.
+- **Sudah diperiksa:** kompilasi dan ZIP GitHub Actions sukses; versi kernel terbaca normal di HyperOS (tidak lagi `Unavailable`); BakaSU dan NoMount built-in terdeteksi oleh aplikasi pengelola.
+- **Belum diuji menyeluruh:** semua patch opsional serta kompatibilitas pada perangkat atau ROM lain.
+
+**Sebelum flashing:** periksa KMI sebenarnya, cadangkan partisi boot bawaan dan partisi lain yang mungkin berubah selama instalasi, lalu siapkan cara pemulihan yang aman. Gunakan kernel flasher yang kompatibel. Segala risiko menjadi tanggung jawab pengguna.
 
 ## Stock Config
 
@@ -115,12 +113,9 @@ Workflow [Perbarui Data Versi GKI](.github/workflows/update-gki-data.yml) berjal
 
 ## Ucapan Terima Kasih
 
-- [zzh20188](https://github.com/zzh20188): Penulis repository build GKI hulu sebelumnya. Repository ini sekarang telah terpisah dari jaringan fork, dan zzh20188/GKI_KernelSU_SUSFS bukan lagi repository hulu untuk repository ini.
-- [coolzyd9107](https://github.com/coolzyd9107): Pemelihara repository ini.
-- [zhuzhuzihan](https://github.com/zhuzhuzihan): Perbaikan workflow serta pengembangan & pemeliharaan Telegram Bot.
-- [TanakaLun](https://github.com/TanakaLun): Perbaikan workflow dan peningkatan fitur.
-- [YC酱luyancib](https://github.com/luyanci): Telegram Bot dan saran alur kerja build.
-- [AlexLiuDev233](https://github.com/AlexLiuDev233): Perbaikan bug workflow.
-- [cctv18](https://github.com/cctv18): Workflow, dukungan 6.12, dan saran perbaikan masalah SUSFS.
+- **Proyek asli dan pengembang utama:** [coolzyd9107 / GKI_BakaSU_SUSFS](https://github.com/coolzyd9107/GKI_BakaSU_SUSFS).
+- **Pemeliharaan dan modifikasi fork Cogan:** [Cogan (cogan17)](https://github.com/cogan17).
+- **Riwayat proyek dan kontributor:** [zzh20188](https://github.com/zzh20188), [zhuzhuzihan](https://github.com/zhuzhuzihan), [TanakaLun](https://github.com/TanakaLun), [luyancib](https://github.com/luyancib), [AlexLiuDev233](https://github.com/AlexLiuDev233), dan [cctv18](https://github.com/cctv18).
+- Terima kasih kepada pengembang dan kontributor **BakaSU, KernelSU, SUSFS, NoMount, Re-Kernel, AnyKernel3**, dan Android GKI.
 
-Untuk build baru dan pemberitahuan perubahan penting, lihat [Saluran Telegram](https://t.me/BakaSUKernelBuilds); untuk saluran resmi BakaSU, lihat [BakaSU_Grp](https://t.me/BakaSU_Grp).
+Repository ini menggunakan lisensi **GPL-2.0**. [Kanal Telegram upstream](https://t.me/BakaSUKernelBuilds) merupakan sumber komunitas asli, bukan kanal dukungan khusus fork Cogan.
