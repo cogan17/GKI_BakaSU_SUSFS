@@ -1635,7 +1635,7 @@ jobs:
           if bash "$KERNEL_ROOT/common/scripts/extract-ikconfig" "$GITHUB_WORKSPACE/Image" > "$RUNNER_TEMP/cogan-compiled.config"; then
             echo "COMPILED_CONFIG=$RUNNER_TEMP/cogan-compiled.config" >> "$GITHUB_ENV"
           else
-            echo "::warning::Konfigurasi Image tidak tersedia; ringkasan hanya melaporkan hasil langkah penerapan."
+            echo "::warning::Image configuration unavailable; the summary will report integration step outcomes only."
           fi
 
       # ==================== Activate Bypass build ====================
@@ -1858,7 +1858,7 @@ jobs:
           compression-level: 9
 
       # Always report actual outcomes, even if source checkout or compilation failed.
-      - name: Ringkasan hasil build
+      - name: Build result summary
         if: always()
         shell: bash
         env:
@@ -1902,7 +1902,7 @@ jobs:
               ('KernelSU / ' + str(i.get('ksu_variant', '')), not clean, ['add_kernelsu', 'configure_kernel_options'], ['CONFIG_KSU'], False),
               ('SUSFS', yes('enable_susfs'), ['apply_susfs_patches', 'add_susfs_configuration'], ['CONFIG_KSU_SUSFS'], a17),
               ('NoMount', yes('use_nomount'), ['apply_nomount'], ['CONFIG_NOMOUNT'], False),
-              ('ZRAM tambahan', yes('use_zram'), ['configure_zram_lz4_patch_stack', 'configure_zram_options'], ['CONFIG_ZRAM', 'CONFIG_CRYPTO_LZ4KD', 'CONFIG_CRYPTO_LZ4K_OPLUS'], a17),
+              ('Enhanced ZRAM', yes('use_zram'), ['configure_zram_lz4_patch_stack', 'configure_zram_options'], ['CONFIG_ZRAM', 'CONFIG_CRYPTO_LZ4KD', 'CONFIG_CRYPTO_LZ4K_OPLUS'], a17),
               ('BBG', yes('use_bbg'), ['add_bbg_anti_bricking_patch'], ['CONFIG_BBG'], False),
               ('Re-Kernel', yes('use_rekernel'), ['apply_re_kernel'], ['CONFIG_REKERNEL', 'CONFIG_REKERNEL_NETWORK'], a17),
               ('CVE-2026-43499 series', yes('cve_2026_43499_patch'), ['auto_apply_cve_2026_43499_rtmutex_fix_series'], [], i.get('kernel_version') == '6.18'),
@@ -1912,48 +1912,48 @@ jobs:
               ('Bypass Image', yes('build_bypass'), ['activate_bypass_kernel_patch', 'build_bypass_kernel', 'prepare_bypass_kernel_image'], [], False),
           ]
           status = os.environ['REPORT_STATUS']
-          label = {'success': '✅ BERHASIL', 'failure': '❌ GAGAL', 'cancelled': '⏹ DIBATALKAN'}.get(status, status)
+          label = {'success': '✅ SUCCESS', 'failure': '❌ FAILED', 'cancelled': '⏹ CANCELLED'}.get(status, status)
           version = i.get('version') or os.environ.get('BUILD_VARIANT', 'Kernel')
-          revision = i.get('revision') or 'Tidak diisi'
+          revision = i.get('revision') or 'Not specified'
           def commit_link(sha, base):
               if re.fullmatch(r'[0-9a-fA-F]{40,64}', sha or ''):
                   return f'[`{sha[:7]}`]({base}/{sha})'
-              return 'Belum tersedia'
+              return 'Not available'
 
           lines = ['# Cogan Kernel for GKI2 Devices', '',
                    f'**{esc(version)} · {esc(revision)} · {label}**', '', '## Root', '']
           root_commit = commit_link(os.environ.get('KSU_ACTUAL_REF', ''), 'https://github.com/Baka-SU/BakaSU/commit')
-          lines += ['- Tanpa root (Clean build)' if clean else f"- {esc(i.get('ksu_variant', 'BakaSU'))} {root_commit}", '', '## Features', '']
+          lines += ['- No root (Clean build)' if clean else f"- {esc(i.get('ksu_variant', 'BakaSU'))} {root_commit}", '', '## Features', '']
           rows = []
           for name, selected, ids, symbols, unsupported in features:
               states = [outcome(sid) for sid in ids]
               if clean and name != 'Bypass Image':
-                  result = '➖ Dilewati: mode Clean'
+                  result = '➖ Skipped: Clean build'
               elif not selected:
-                  result = '➖ Tidak diminta'
+                  result = '➖ Not requested'
               elif 'failure' in states:
-                  result = '❌ Langkah penerapan gagal'
+                  result = '❌ Integration step failed'
               elif 'cancelled' in states:
-                  result = '⏹ Dibatalkan'
+                  result = '⏹ Cancelled'
               elif unsupported:
-                  result = '➖ Tidak didukung / prasyarat tidak aktif'
+                  result = '➖ Unsupported / prerequisite disabled'
               elif not all(state == 'success' for state in states):
-                  result = '⏳ Belum selesai / dilewati'
+                  result = '⏳ Not completed / skipped'
               elif symbols and config:
                   missing = [key for key in symbols if config.get(key) not in ('y', 'm')]
-                  result = ('⚠️ Tidak aktif di Image: ' + ', '.join(missing)) if missing else '✅ Aktif di konfigurasi Image'
+                  result = ('⚠️ Not enabled in Image: ' + ', '.join(missing)) if missing else '✅ Enabled in Image configuration'
               elif name == 'Bypass Image':
-                  result = '✅ Image Bypass dibuat'
+                  result = '✅ Bypass Image built'
               elif name.startswith('CVE-'):
-                  result = '✅ Pemeriksaan/perbaikan selesai (dapat sudah ada di upstream)'
+                  result = '✅ Check/fix completed (may already be present upstream)'
               else:
-                  result = '✅ Langkah penerapan selesai; belum diverifikasi di Image'
+                  result = '✅ Integration steps completed; not verified in Image'
               rows.append(f"| {esc(name)} | {'ON' if selected else 'OFF'} | {esc(result)} |")
               if selected and not (clean and name != 'Bypass Image') and not name.startswith('KernelSU /'):
                   lines.append(f'- **{esc(name)}** — {esc(result)}')
           if not any(selected and not name.startswith('KernelSU /') and (not clean or name == 'Bypass Image') for name, selected, *_ in features):
-              lines.append('- Tidak ada fitur tambahan yang diminta.')
-          lines += ['', '## SUSFS commits', '', '| SUSFS branch | Commit sumber |', '|---|---|']
+              lines.append('- No additional features requested.')
+          lines += ['', '## SUSFS commits', '', '| SUSFS branch | Source commit |', '|---|---|']
           susfs_sha = ''
           susfs_dir = os.environ.get('SUSFS4KSU', '')
           if not clean and yes('enable_susfs') and not a17 and susfs_dir and Path(susfs_dir, '.git').exists():
@@ -1963,37 +1963,37 @@ jobs:
                   pass
           susfs_branch = f"gki-{i.get('android_version')}-{i.get('kernel_version')}"
           lines += [f"| {esc(susfs_branch)} | {commit_link(susfs_sha, 'https://gitlab.com/simonpunk/susfs4ksu/-/commit')} |", '',
-                    'Commit menunjukkan sumber yang diambil; hasil penerapannya ada pada daftar Features.', '',
-                    '## Build information', '', '| Informasi | Nilai |', '|---|---|']
+                    'The commit identifies the fetched source; see Features for integration results.', '',
+                    '## Build information', '', '| Information | Value |', '|---|---|']
           for key, value in [
-              ('Android / kernel diminta', f"{i.get('android_version')} / {i.get('kernel_version')}.{i.get('sub_level')}"),
-              ('Sublevel sumber aktual', os.environ.get('ACTUAL_SUBLEVEL', 'Belum diperiksa')),
+              ('Requested Android / kernel', f"{i.get('android_version')} / {i.get('kernel_version')}.{i.get('sub_level')}"),
+              ('Actual source sublevel', os.environ.get('ACTUAL_SUBLEVEL', 'Not checked')),
               ('Security patch level', i.get('os_patch_level', '')),
               ('Mode', 'Clean' if clean else i.get('ksu_variant', '')),
-              ('Waktu build', os.environ.get('KBUILD_BUILD_TIMESTAMP', 'Belum ditetapkan')),
-              ('KSU branch / commit', os.environ.get('BRANCH', i.get('ksu_branch') or 'Default') + ' / ' + os.environ.get('KSU_ACTUAL_REF', 'Belum tersedia')),
+              ('Build time', os.environ.get('KBUILD_BUILD_TIMESTAMP', 'Not set')),
+              ('KSU branch / commit', os.environ.get('BRANCH', i.get('ksu_branch') or 'Default') + ' / ' + os.environ.get('KSU_ACTUAL_REF', 'Not available')),
               ('Workflow commit', os.environ.get('GITHUB_SHA', '')),
           ]:
               lines.append(f'| {key} | {esc(value)} |')
-          lines += ['', '<details>', '<summary>Semua opsi dan hasil penerapan</summary>', '',
-                    '| Fitur | Pilihan | Hasil |', '|---|---|---|', *rows, '', '</details>', '',
-                    'Status Image berasal dari konfigurasi kernel hasil kompilasi, bukan pengujian di HP. Langkah sukses dapat berisi peringatan patch; lihat log dan patch-rejects bila tersedia.', '']
+          lines += ['', '<details>', '<summary>All options and integration results</summary>', '',
+                    '| Feature | Selected | Result |', '|---|---|---|', *rows, '', '</details>', '',
+                    'Image status reflects the compiled kernel configuration, not on-device testing. Successful steps may contain patch warnings; check the logs and patch-rejects when available.', '']
           failed = [names.get(sid, sid.replace('_', ' ')) for sid, value in steps.items() if value.get('outcome') == 'failure']
           if failed:
-              lines += ['### Langkah yang gagal', ''] + ['- ' + esc(name) for name in failed] + ['']
+              lines += ['### Failed steps', ''] + ['- ' + esc(name) for name in failed] + ['']
           run_url = f"{os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/{os.environ.get('GITHUB_RUN_ID', '')}"
           zip_name = f"{os.environ.get('CONFIG', '')}-{os.environ.get('BUILD_VARIANT', '')}-AnyKernel3.zip"
           upload = steps.get('upload_ready_to_flash_zip', {})
           url = upload.get('outputs', {}).get('artifact-url')
           if outcome('upload_ready_to_flash_zip') == 'success' and url:
-              lines += [f'### 📦 [Unduh ZIP siap-flash]({url})', '', esc(zip_name)]
+              lines += [f'### 📦 [Download flashable ZIP]({url})', '', esc(zip_name)]
           else:
-              lines += ['### 📦 ZIP siap-flash belum berhasil diunggah']
-          lines += ['', f'[Buka log build]({run_url})', '']
+              lines += ['### 📦 Flashable ZIP not uploaded']
+          lines += ['', f'[View build logs]({run_url})', '']
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
               summary.write('\n'.join(lines))
           # A compact notice also appears in Annotations on the run page.
-          notice = f'{version} {revision}: {label}. Buka ringkasan job untuk status SUSFS, NoMount dan fitur lainnya.'
+          notice = f'{version} {revision}: {label}. Open the job summary for SUSFS, NoMount and other feature results.'
           notice = notice.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
-          print('::notice title=Ringkasan build::' + notice)
+          print('::notice title=Build summary::' + notice)
           PY_REPORT
