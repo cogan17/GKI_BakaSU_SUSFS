@@ -1396,6 +1396,12 @@ jobs:
               "CONFIG_TCP_CONG_ADVANCED": "y",
               "CONFIG_TCP_CONG_BBR": "y",
               "CONFIG_TCP_CONG_BBR3": "y",
+              "CONFIG_TCP_CONG_BIC": "n",
+              "CONFIG_TCP_CONG_WESTWOOD": "n",
+              "CONFIG_TCP_CONG_HTCP": "n",
+              "CONFIG_TCP_CONG_CUBIC": "y",
+              "CONFIG_DEFAULT_CUBIC": "y",
+              "CONFIG_DEFAULT_TCP_CONG": '"cubic"',
               "CONFIG_NET_SCH_FQ": "y",
           }
           lines = []
@@ -1644,6 +1650,34 @@ jobs:
             fi
 
             echo "Build complete: $BUILD_VARIANT"
+
+      - name: Verify final TCP configuration
+        if: inputs.use_tcp_bbrv3
+        working-directory: ${{ env.KERNEL_ROOT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUDIT_DIR="$GITHUB_WORKSPACE/tcp-build-audit"
+          mkdir -p "$AUDIT_DIR"
+          bash common/scripts/extract-ikconfig bazel-bin/common/kernel_aarch64/Image > "$AUDIT_DIR/kernel.config"
+          for expected in CONFIG_TCP_CONG_BBR=y CONFIG_TCP_CONG_BBR3=y CONFIG_TCP_CONG_CUBIC=y CONFIG_DEFAULT_CUBIC=y 'CONFIG_DEFAULT_TCP_CONG="cubic"'; do
+            grep -Fx "$expected" "$AUDIT_DIR/kernel.config"
+          done
+          for symbol in TCP_CONG_BIC TCP_CONG_WESTWOOD TCP_CONG_HTCP; do
+            grep -Fx "# CONFIG_${symbol} is not set" "$AUDIT_DIR/kernel.config"
+          done
+          if [ -f bazel-bin/common/kernel_aarch64/Module.symvers ]; then
+            cp bazel-bin/common/kernel_aarch64/Module.symvers "$AUDIT_DIR/"
+          fi
+          git -C common rev-parse HEAD > "$AUDIT_DIR/kernel-source-commit.txt"
+
+      - name: Upload TCP configuration audit
+        if: inputs.use_tcp_bbrv3
+        uses: actions/upload-artifact@v6
+        with:
+          name: tcp-build-audit
+          path: tcp-build-audit/
+          if-no-files-found: error
 
       # ==================== Prepare kernel Image ====================
       # Copy build output to workspace for AnyKernel3 packaging
