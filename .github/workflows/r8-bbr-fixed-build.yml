@@ -1,0 +1,43 @@
+name: R8 fixed BBR verification build
+
+# Only editing this launcher on the experimental branch starts this build.
+on:
+  push:
+    branches:
+      - experiment/r8-bbr-bbrv3-gki61
+    paths:
+      - .github/workflows/r8-bbr-fixed-build.yml
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: r8-bbr-fixed-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-fixed-kernel:
+    uses: ./.github/workflows/build.yml
+    with:
+      android_version: "android14"
+      kernel_version: "6.1"
+      sub_level: "177"
+      os_patch_level: "lts"
+      revision: "r7"
+      ksu_variant: "BakaSU"
+      ksu_branch: ""
+      version: "Cogan"
+      build_time: "N"
+      clean_build: false
+      use_zram: true
+      use_nomount: true
+      use_tcp_bbrv3: true
+      use_bbg: true
+      use_rekernel: true
+      cve_2026_43499_patch: true
+      enable_susfs: true
+      supp_op: false
+      droidspaces: "off"
+      droidspaces_ntsync: false
+      build_bypass: false
