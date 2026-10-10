@@ -1,6 +1,7 @@
 name: R8 fixed BBR verification build
 
 # Only editing this launcher on the experimental branch starts this build.
+# Verify canonical disabled TCP options from fix d1408f1.
 on:
   push:
     branches:
