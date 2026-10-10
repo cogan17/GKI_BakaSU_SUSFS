@@ -1458,39 +1458,6 @@ jobs:
             fi
           fi
 
-      # ==================== Simplify Android-visible /proc/version ====================
-      - name: Simplify Android kernel version display
-        if: inputs.android_version == 'android14' && inputs.kernel_version == '6.1' && inputs.version != ''
-        working-directory: ${{ env.KERNEL_ROOT }}
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-
-          # Only change /proc/version; keep the kernel boot banner and compiler intact.
-          path = Path("common/init/version.c")
-          source = path.read_text()
-          marker = "const char linux_proc_banner[] ="
-          if source.count(marker) != 1:
-              raise SystemExit("::error::Expected exactly one linux_proc_banner declaration")
-          start = source.index(marker)
-          end = source.find(";", start)
-          if end < 0:
-              raise SystemExit("::error::Unterminated linux_proc_banner declaration")
-          old = source[start:end + 1]
-          required = (
-              '"%s version %s"',
-              "LINUX_COMPILE_BY",
-              "LINUX_COMPILE_HOST",
-              "LINUX_COMPILER",
-              r"%s\n",
-          )
-          if not all(item in old for item in required):
-              raise SystemExit("::error::Unexpected linux_proc_banner format; refusing to patch")
-          new = 'const char linux_proc_banner[] =\n\t"%s version %s %s\\n";'
-          path.write_text(source[:start] + new + source[end + 1:])
-          print("Android-visible /proc/version now shows kernel release and build time only")
-          PY
       # ==================== Custom build time ====================
       - name: Set custom build time
         shell: bash
@@ -1500,7 +1467,7 @@ jobs:
           if [[ -n "$INPUT_TIME" && "$INPUT_TIME" != "N" && "$INPUT_TIME" != "n" ]]; then
             DATESTR="$INPUT_TIME"
           else
-            DATESTR="$(TZ='UTC' date +'%a %b %d %T %Z %Y')"
+            DATESTR="$(TZ='UTC' date +'%Y-%m-%d %H:%M:%S UTC')"
           fi
 
           # Export for subsequent build steps
