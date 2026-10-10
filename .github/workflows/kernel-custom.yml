@@ -53,6 +53,15 @@ on:
         type: string
         default: ""
 
+      # Display-only choice; the pipeline always receives an empty KSU branch.
+      kernelsu_branch:
+        description: "KSU branch (locked to upstream default)"
+        required: false
+        type: choice
+        options:
+          - "Default (automatic)"
+        default: "Default (automatic)"
+
       # ==================== Optional configuration ====================
       version:
         description: "Custom version name (optional)"
