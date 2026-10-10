@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: update-gki-data-${{ github.ref }}
@@ -43,15 +44,35 @@ jobs:
             python scripts/prepare_matrix.py "$data_file" > /dev/null
           done
 
-      - name: Commit data changes
+      - name: Publish data update for review
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/android*/*.json
           if git diff --cached --quiet; then
             echo "No changes to GKI version data."
+            echo "No changes to GKI version data." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          update_branch="automation/gki-data-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git switch -c "$update_branch"
           git commit -m "chore: update GKI kernel version data"
-          git pull --rebase origin "$GITHUB_REF_NAME"
-          git push origin "HEAD:$GITHUB_REF_NAME"
+          git push origin "HEAD:refs/heads/$update_branch"
+
+          export UPDATE_BRANCH="$update_branch"
+          compare_url=$(python -c 'import os, urllib.parse; print(os.environ["GITHUB_SERVER_URL"] + "/" + os.environ["GITHUB_REPOSITORY"] + "/compare/" + urllib.parse.quote(os.environ["GITHUB_REF_NAME"], safe="") + "..." + urllib.parse.quote(os.environ["UPDATE_BRANCH"], safe="") + "?expand=1")')
+          echo "Data saved to branch: $update_branch" >> "$GITHUB_STEP_SUMMARY"
+          echo "The target branch has not been updated; review and merge are required." >> "$GITHUB_STEP_SUMMARY"
+          if pr_url=$(gh pr create --repo "$GITHUB_REPOSITORY" \
+            --base "$GITHUB_REF_NAME" --head "$update_branch" \
+            --title "chore: update GKI kernel version data" \
+            --body "Validated GKI data from workflow run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. Review and merge to apply these updates." \
+            2> "$RUNNER_TEMP/gki-pr-error.log"); then
+            echo "Pull request: $pr_url" >> "$GITHUB_STEP_SUMMARY"
+          else
+            cat "$RUNNER_TEMP/gki-pr-error.log" >&2
+            echo "::warning::Data saved, but automatic PR creation failed. Open the comparison link in the job summary to create a PR manually."
+            echo "Automatic PR creation failed. [Create a pull request]($compare_url)." >> "$GITHUB_STEP_SUMMARY"
+          fi
