@@ -1458,6 +1458,31 @@ jobs:
             fi
           fi
 
+      # ==================== Experimental short kernel version (r7) ====================
+      - name: Shorten compiler label for HyperOS (experimental)
+        if: inputs.android_version == 'android14' && inputs.kernel_version == '6.1' && inputs.version != ''
+        working-directory: ${{ env.KERNEL_ROOT }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("common/init/version.c")
+          source = path.read_text()
+          marker = "const char linux_proc_banner[] ="
+          if source.count(marker) != 1:
+              raise SystemExit("::error::Unexpected linux_proc_banner declaration")
+          start = source.index(marker)
+          end = source.find(";", start)
+          if end == -1:
+              raise SystemExit("::error::Unterminated linux_proc_banner")
+          declaration = source[start:end + 1]
+          if declaration.count("LINUX_COMPILER") != 1 or "LINUX_COMPILE_BY" not in declaration or "LINUX_COMPILE_HOST" not in declaration:
+              raise SystemExit("::error::Unexpected banner structure; refusing unsafe edit")
+          updated = declaration.replace("LINUX_COMPILER", '"clang"')
+          path.write_text(source[:start] + updated + source[end + 1:])
+          print("Short compiler label applied; parenthesized fields preserved")
+          PY
+
       # ==================== Custom build time ====================
       - name: Set custom build time
         shell: bash
