@@ -1410,11 +1410,12 @@ jobs:
                      for key in wanted):
                   continue
               lines.append(line)
+          # Kleaf verifies fragments against the canonical .config syntax.
           for key, value in wanted.items():
-              lines.append(f"{key}={value}")
+              lines.append(f"# {key} is not set" if value == "n" else f"{key}={value}")
           path.write_text("\n".join(lines) + "\n")
           for key, value in wanted.items():
-              print(f"Enabled {key}={value}")
+              print(f"Configured {key}={value}")
           PY
           echo "Applied pinned BBRv3 patch; enabled BBR/BBRv3; CUBIC remains default."
 
