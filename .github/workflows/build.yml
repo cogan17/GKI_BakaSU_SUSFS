@@ -71,6 +71,10 @@ on:
         required: false
         type: boolean
         default: true
+      use_tcp_bbrv3:
+        required: false
+        type: boolean
+        default: false
       cve_2026_43499_patch:
         required: false
         type: boolean
@@ -138,6 +142,7 @@ jobs:
           echo "ZRAM enhancements     : ${{ inputs.clean_build != true && inputs.use_zram && !(inputs.android_version == 'android17' && inputs.kernel_version == '6.18') }}"
           echo "BBG patch      : ${{ inputs.clean_build != true && inputs.use_bbg }}"
           echo "Re-Kernel     : ${{ inputs.clean_build != true && inputs.use_rekernel && !(inputs.android_version == 'android17' && inputs.kernel_version == '6.18') }}"
+          echo "TCP BBR + BBRv3: ${{ inputs.use_tcp_bbrv3 }} (Android 14 GKI / Linux 6.1 only)"
           echo "CVE-2026-43499: ${{ inputs.clean_build != true && inputs.cve_2026_43499_patch && inputs.kernel_version != '6.18' }}"
           echo "NTSync        : ${{ inputs.clean_build != true && inputs.droidspaces != 'off' && inputs.droidspaces_ntsync && !(inputs.android_version == 'android17' && inputs.kernel_version == '6.18') }}"
           echo "OnePlus 8E    : ${{ inputs.clean_build != true && inputs.supp_op && !(inputs.android_version == 'android17' && inputs.kernel_version == '6.18') }}"
@@ -1340,6 +1345,80 @@ jobs:
             echo "✅ Successfully enabled CONFIG_NOMOUNT"
           fi
 
+      # ==================== Experimental TCP BBR + BBRv3 (r8) ====================
+      # Patch authored by fatalcoder524, sourced from a pinned WildKernels/kernel_patches commit.
+      - name: Apply TCP BBR and BBRv3 patch (Android 14 GKI 6.1 only)
+        if: inputs.use_tcp_bbrv3
+        working-directory: ${{ env.KERNEL_ROOT }}/common
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ inputs.android_version }}-${{ inputs.kernel_version }}" != "android14-6.1" ]]; then
+            echo "::error::BBRv3 experiment only supports android14-6.1"
+            exit 1
+          fi
+          if [[ "${{ inputs.clean_build }}" == "true" ]]; then
+            echo "::error::BBRv3 cannot be enabled together with clean_build"
+            exit 1
+          fi
+
+          # https://github.com/WildKernels/kernel_patches
+          PATCH_COMMIT="41ae18b35d20e0c6ac04116785a4a1089528ae94"
+          PATCH_GIT_BLOB="7677f8de61f6d8aa899db9d21aa150413670e06a"
+          PATCH_NAME="0001-net-tcp-backport-BBRv3-to-android14-6.1.patch"
+          PATCH_URL="https://raw.githubusercontent.com/WildKernels/kernel_patches/${PATCH_COMMIT}/common/bbrv3/${PATCH_NAME}"
+          PATCH_FILE="${RUNNER_TEMP}/${PATCH_NAME}"
+
+          curl --fail --location --silent --show-error --retry 3 --retry-delay 2 \
+            --output "$PATCH_FILE" "$PATCH_URL"
+          if [[ "$(git hash-object "$PATCH_FILE")" != "$PATCH_GIT_BLOB" ]]; then
+            echo "::error::BBRv3 patch integrity check failed"
+            exit 1
+          fi
+          if grep -qE '^[[:space:]]*config[[:space:]]+TCP_CONG_BBR3$' net/ipv4/Kconfig; then
+            echo "::error::BBRv3 already present; manual review required"
+            exit 1
+          fi
+          patch --batch --forward --fuzz=0 --dry-run -p1 < "$PATCH_FILE"
+          patch --batch --forward --fuzz=0 -p1 < "$PATCH_FILE"
+
+          grep -qE '^[[:space:]]*config[[:space:]]+TCP_CONG_BBR3$' net/ipv4/Kconfig
+          grep -Fq 'obj-$(CONFIG_TCP_CONG_BBR3) += tcp_bbr3.o' net/ipv4/Makefile
+          test -s net/ipv4/tcp_bbr3.c
+
+          # Preserve CUBIC as the default and expose BBR/BBRv3 to TCP Optimiser.
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ["DEFCONFIG"])
+          wanted = {
+              "CONFIG_TCP_CONG_ADVANCED": "y",
+              "CONFIG_TCP_CONG_BBR": "y",
+              "CONFIG_TCP_CONG_BBR3": "y",
+              "CONFIG_TCP_CONG_BIC": "n",
+              "CONFIG_TCP_CONG_WESTWOOD": "n",
+              "CONFIG_TCP_CONG_HTCP": "n",
+              "CONFIG_TCP_CONG_CUBIC": "y",
+              "CONFIG_DEFAULT_CUBIC": "y",
+              "CONFIG_DEFAULT_TCP_CONG": '"cubic"',
+              "CONFIG_NET_SCH_FQ": "y",
+          }
+          lines = []
+          for line in path.read_text().splitlines():
+              if any(line.startswith(key + "=") or line == "# " + key + " is not set"
+                     for key in wanted):
+                  continue
+              lines.append(line)
+          # Kleaf verifies fragments against the canonical .config syntax.
+          for key, value in wanted.items():
+              lines.append(f"# {key} is not set" if value == "n" else f"{key}={value}")
+          path.write_text("\n".join(lines) + "\n")
+          for key, value in wanted.items():
+              print(f"Configured {key}={value}")
+          PY
+          echo "Applied pinned BBRv3 patch; enabled BBR/BBRv3; CUBIC remains default."
+
       # ==================== Configure kernel options ====================
       # Add KernelSU and other necessary kernel configuration
       - name: Configure kernel options
@@ -1572,6 +1651,34 @@ jobs:
             fi
 
             echo "Build complete: $BUILD_VARIANT"
+
+      - name: Verify final TCP configuration
+        if: inputs.use_tcp_bbrv3
+        working-directory: ${{ env.KERNEL_ROOT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUDIT_DIR="$GITHUB_WORKSPACE/tcp-build-audit"
+          mkdir -p "$AUDIT_DIR"
+          bash common/scripts/extract-ikconfig bazel-bin/common/kernel_aarch64/Image > "$AUDIT_DIR/kernel.config"
+          for expected in CONFIG_TCP_CONG_BBR=y CONFIG_TCP_CONG_BBR3=y CONFIG_TCP_CONG_CUBIC=y CONFIG_DEFAULT_CUBIC=y 'CONFIG_DEFAULT_TCP_CONG="cubic"'; do
+            grep -Fx "$expected" "$AUDIT_DIR/kernel.config"
+          done
+          for symbol in TCP_CONG_BIC TCP_CONG_WESTWOOD TCP_CONG_HTCP; do
+            grep -Fx "# CONFIG_${symbol} is not set" "$AUDIT_DIR/kernel.config"
+          done
+          if [ -f bazel-bin/common/kernel_aarch64/Module.symvers ]; then
+            cp bazel-bin/common/kernel_aarch64/Module.symvers "$AUDIT_DIR/"
+          fi
+          git -C common rev-parse HEAD > "$AUDIT_DIR/kernel-source-commit.txt"
+
+      - name: Upload TCP configuration audit
+        if: inputs.use_tcp_bbrv3
+        uses: actions/upload-artifact@v6
+        with:
+          name: tcp-build-audit
+          path: tcp-build-audit/
+          if-no-files-found: error
 
       # ==================== Prepare kernel Image ====================
       # Copy build output to workspace for AnyKernel3 packaging

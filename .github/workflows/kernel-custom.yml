@@ -87,6 +87,11 @@ on:
         required: false
         type: boolean
         default: true
+      use_tcp_bbrv3:
+        description: "EXPERIMENTAL: Enable TCP BBR + BBRv3 on Android 14 GKI 6.1"
+        required: false
+        type: boolean
+        default: false
       use_bbg:
         description: "Enable BBG anti-bricking protection"
         required: true
@@ -169,6 +174,7 @@ jobs:
       build_time: ${{ inputs.build_time || '' }}
       use_zram: ${{ inputs.use_zram }}
       use_nomount: ${{ inputs.use_nomount }}
+      use_tcp_bbrv3: ${{ inputs.use_tcp_bbrv3 }}
       use_bbg: ${{ inputs.use_bbg }}
       use_rekernel: ${{ inputs.use_rekernel || false }}
       cve_2026_43499_patch: ${{ inputs.cve_2026_43499_patch }}
