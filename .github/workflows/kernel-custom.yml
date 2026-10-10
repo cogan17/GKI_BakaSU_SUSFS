@@ -24,7 +24,7 @@ on:
           - android15
           - android16
           - android17
-        default: android12
+        default: android14
       kernel_version:
         description: "Kernel version"
         required: true
@@ -36,22 +36,22 @@ on:
           - "6.6"
           - "6.12"
           - "6.18"
-        default: "5.10"
+        default: "6.1"
       sub_level:
-        description: "Sublevel (e.g. 66, 198, X)"
+        description: "Sublevel only (e.g. 177, not 6.1.177)"
         required: true
         type: string
-        default: "66"
+        default: "177"
       os_patch_level:
         description: "Security patch level (e.g. 2022-01, lts)"
         required: true
         type: string
-        default: "2022-01"
+        default: "lts"
       revision:
-        description: "Revision (e.g. r11, required for 5.10 only)"
+        description: "Revision (optional, e.g. r7; blank = no revision)"
         required: false
         type: string
-        default: "r11"
+        default: ""
 
       # ==================== KernelSU configuration ====================
       # KernelSU variant is fixed to BakaSU
@@ -66,6 +66,7 @@ on:
         description: "Custom version name (optional)"
         required: false
         type: string
+        default: "Cogan"
       build_time:
         description: "Build time: N = current UTC; or enter e.g. Sat Oct 10 19:10:00 UTC 2026"
         required: false
@@ -82,7 +83,7 @@ on:
         description: "Enable enhanced ZRAM compression"
         required: true
         type: boolean
-        default: false
+        default: true
       use_nomount:
         description: 'Enable NoMount (hide mount points)'
         required: false
@@ -92,48 +93,17 @@ on:
         description: "Enable BBG anti-bricking protection"
         required: true
         type: boolean
-        default: false
+        default: true
       use_rekernel:
         description: "Enable Re-Kernel driver"
         required: false
         type: boolean
-        default: false
+        default: true
       cve_2026_43499_patch:
         description: "Apply CVE-2026-43499 rtmutex fix series"
         required: false
         type: boolean
         default: true
-      cancel_susfs:
-        description: "Disable SUSFS"
-        required: true
-        type: boolean
-        default: false
-      supp_op:
-        description: "Enable OnePlus 8E support"
-        required: false
-        type: boolean
-        default: false
-      droidspaces:
-        description: "Droidspaces container support (5.10–6.6: slot patches; 6.12+: enable/disable)"
-        required: false
-        type: choice
-        options:
-          - "off"
-          - "678"
-          - "123"
-          - "345"
-        default: "off"
-      droidspaces_ntsync:
-        description: "Enable NTSync for Droidspaces containers (requires Droidspaces)"
-        required: false
-        type: boolean
-        default: false
-      build_bypass:
-        description: "Build both standard and Bypass kernels"
-        required: false
-        type: boolean
-        default: false
-
 jobs:
   validate-custom-kmi:
     runs-on: ubuntu-latest
@@ -173,11 +143,12 @@ jobs:
       use_bbg: ${{ inputs.use_bbg }}
       use_rekernel: ${{ inputs.use_rekernel || false }}
       cve_2026_43499_patch: ${{ inputs.cve_2026_43499_patch }}
-      supp_op: ${{ inputs.supp_op || false }}
-      enable_susfs: ${{ !inputs.cancel_susfs }}
-      droidspaces: ${{ inputs.droidspaces || 'off' }}
-      droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
-      build_bypass: ${{ inputs.build_bypass || false }}
+      # Fixed for this Custom workflow: SUSFS on; unused optional features off.
+      supp_op: false
+      enable_susfs: true
+      droidspaces: "off"
+      droidspaces_ntsync: false
+      build_bypass: false
 
   validation-report:
     name: Validation failure summary
