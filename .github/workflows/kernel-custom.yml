@@ -1,5 +1,5 @@
 name: Android Kernel Build - Custom
-run-name: "${{ inputs.version || 'GKI' }} ${{ inputs.revision }} | ${{ inputs.android_version }} ${{ inputs.kernel_version }}.${{ inputs.sub_level }} ${{ inputs.os_patch_level }} | ${{ inputs.clean_build && 'Clean' || 'BakaSU' }}"
+run-name: "${{ inputs.version || 'GKI' }} ${{ inputs.revision }} | ${{ inputs.android_version }} ${{ inputs.kernel_version }}.${{ inputs.sub_level }} ${{ inputs.os_patch_level }} | BakaSU"
 
 # Use Node.js 24
 env:
@@ -53,14 +53,6 @@ on:
         type: string
         default: ""
 
-      # ==================== KernelSU configuration ====================
-      # KernelSU variant is fixed to BakaSU
-      kernelsu_branch:
-        description: "KSU branch (main/builtin/custom commit hash; blank uses default)"
-        required: false
-        type: string
-        default: ""
-
       # ==================== Optional configuration ====================
       version:
         description: "Custom version name (optional)"
@@ -74,11 +66,6 @@ on:
         default: "N"
 
       # ==================== Feature toggles ====================
-      clean_build:
-        description: "Clean build (no KernelSU, SUSFS or optional patches)"
-        type: boolean
-        default: false
-
       use_zram:
         description: "Enable enhanced ZRAM compression"
         required: true
@@ -128,14 +115,14 @@ jobs:
     uses: ./.github/workflows/build.yml
     secrets: inherit
     with:
-      clean_build: ${{ inputs.clean_build }}
+      clean_build: false
       android_version: ${{ inputs.android_version }}
       kernel_version: ${{ inputs.kernel_version }}
       sub_level: ${{ inputs.sub_level }}
       os_patch_level: ${{ inputs.os_patch_level }}
       revision: ${{ inputs.revision || '' }}
-      ksu_variant: ${{ inputs.clean_build && 'Clean' || 'BakaSU' }}
-      ksu_branch: ${{ inputs.kernelsu_branch }}
+      ksu_variant: BakaSU
+      ksu_branch: ""
       version: ${{ inputs.version || '' }}
       build_time: ${{ inputs.build_time || '' }}
       use_zram: ${{ inputs.use_zram }}
