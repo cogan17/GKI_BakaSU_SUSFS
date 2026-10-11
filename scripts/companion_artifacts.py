@@ -168,6 +168,17 @@ def finalize(args):
         raise ValueError("Compiled kernel disables manager support")
     if metadata["nomount_commit"] and "CONFIG_NOMOUNT=y" not in config:
         raise ValueError("Compiled kernel does not contain built-in NoMount")
+    # Fail closed if verified APK bytes or version metadata changed.
+    for variant in ARTIFACTS:
+        info = metadata["managers"][variant]
+        if sha256(directory / f"{variant}.apk") != info["sha256"]:
+            raise ValueError(f"{variant} manager modified after verification")
+        if info.get("version_code") != metadata["kernel_driver_version"]:
+            raise ValueError(f"{variant} manager/driver version mismatch")
+        if not re.fullmatch(r"[0-9a-f]{64}", info.get("certificate_sha256", "")):
+            raise ValueError(f"{variant} manager certificate record missing")
+    if metadata["managers"]["normal"]["certificate_sha256"] != metadata["managers"]["spoofed"]["certificate_sha256"]:
+        raise ValueError("Official manager signing certificates disagree")
     destination.mkdir(parents=True, exist_ok=True)
     files = {}
     for variant in ARTIFACTS:
