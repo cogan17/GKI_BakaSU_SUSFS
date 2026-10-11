@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Opt-in Telegram notifications for official Cogan GitHub Actions.
 
-This sender never reads the legacy upstream BOT_TOKEN/CHAT_ID secrets.
-Until COGAN_TELEGRAM_ENABLED=true and new destination secrets are configured,
-it makes no network requests.
+This sender never reads legacy upstream secrets. Notifications remain disabled
+until enabled explicitly, and only one destination is used per invocation so a
+channel linked to a discussion group does not produce duplicate posts.
 """
 
 import html
@@ -53,23 +53,34 @@ def notification_text(kind: str) -> str:
 
 
 def destinations():
+    """Choose one destination; linked channel posts already appear in the group."""
     channel_id = os.getenv("COGAN_TELEGRAM_CHANNEL_ID", "").strip()
     group_id = os.getenv("COGAN_TELEGRAM_GROUP_ID", "").strip()
     thread_id = os.getenv("COGAN_TELEGRAM_GROUP_THREAD_ID", "").strip()
-    result = []
-    for label, chat_id in (("channel", channel_id), ("group", group_id)):
-        if not chat_id:
-            continue
-        # Require numeric chat IDs: no hardcoded or unexpected @handle destinations.
-        if not re.fullmatch(r"-?[0-9]{5,20}", chat_id):
-            raise ValueError(f"Invalid {label} chat ID (expected numeric Telegram ID)")
-        payload = {"chat_id": chat_id}
-        if label == "group" and thread_id:
-            if not re.fullmatch(r"[1-9][0-9]*", thread_id):
-                raise ValueError("Group message thread ID must be a positive integer")
+    target = os.getenv("COGAN_TELEGRAM_TARGET", "auto").strip().lower()
+
+    if target not in ("auto", "channel", "group"):
+        raise ValueError("COGAN_TELEGRAM_TARGET must be auto, channel or group")
+    if channel_id and not (
+        re.fullmatch(r"@[A-Za-z][A-Za-z0-9_]{4,31}", channel_id)
+        or re.fullmatch(r"-?[0-9]{5,20}", channel_id)
+    ):
+        raise ValueError("Channel ID must be a numeric Telegram ID or @public_username")
+    if group_id and not re.fullmatch(r"-?[0-9]{5,20}", group_id):
+        raise ValueError("Group ID must be a numeric Telegram ID")
+    if thread_id and not re.fullmatch(r"[1-9][0-9]*", thread_id):
+        raise ValueError("Group thread ID must be a positive integer")
+
+    if target == "auto":
+        target = "channel" if channel_id else "group"
+    if target == "channel" and channel_id:
+        return [("channel", {"chat_id": channel_id})]
+    if target == "group" and group_id:
+        payload = {"chat_id": group_id}
+        if thread_id:
             payload["message_thread_id"] = int(thread_id)
-        result.append((label, payload))
-    return result
+        return [("group", payload)]
+    return []
 
 
 def send(token: str, label: str, payload: dict) -> None:
