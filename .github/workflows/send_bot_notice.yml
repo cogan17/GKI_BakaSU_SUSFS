@@ -1,68 +1,35 @@
 name: Send Telegram Bot Notification
-permissions:
-  contents: read
-  actions: read
+
 on:
   workflow_dispatch:
     inputs:
-      # ==================== Bot-push options ====================
       msg_type:
-        description: "Notification type"
-        type: string  # Original boolean type was unsuitable; string allows custom types
-        default: "notice"
+        description: Notification type
+        type: string
+        default: notice
         required: true
       content:
-        description: "Notification content"
+        description: Notification content
         type: string
-        default: ""
         required: true
+
+permissions:
+  contents: read
+
 jobs:
   send-telegram:
     runs-on: ubuntu-latest
     steps:
-      - name: Send Telegram group notification (channel discussion group)
+      - name: Checkout notification sender
+        uses: actions/checkout@v4
+      - name: Send official Cogan notification (opt-in)
         env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID_3 }}
-          MESSAGE_THREAD_ID: ${{ secrets.MESSAGE_THREAD_ID_3 }}
-        run: |
-          set -euo pipefail
-          # Define input variables
-          INPUT_MSG_TYPE="${{ inputs.msg_type }}"
-          INPUT_CONTENT="${{ inputs.content }}"
-          
-          # Validate required environment variables
-          if [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then
-            echo "Error: BOT_TOKEN or CHAT_ID is not configured"
-            exit 1
-          fi
-          
-          # Compose HTML message with Telegram escaping
-          TEXT="<b>New Notifications: </b>%0A%0A"
-          TEXT+="<b>Notification type：</b><code>${INPUT_MSG_TYPE}</code>%0A%0A"
-          TEXT+="<b>Notification content：</b>%0A<pre>${INPUT_CONTENT}</pre>"
-          
-          # Send Telegram request and capture response
-          echo "Sending Telegram notification..."
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-            -d "chat_id=${CHAT_ID}" \
-            -d "message_thread_id=${MESSAGE_THREAD_ID}" \
-            -d "parse_mode=HTML" \
-            -d "text=${TEXT}")
-
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-            -d "chat_id=-1003567736013" \
-            -d "parse_mode=HTML" \
-            -d "text=${TEXT}")
-          
-          # Parse response code and body
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          RESPONSE_BODY=$(echo "$RESPONSE" | head -n -1)
-          
-          # Check result
-          if [ "$HTTP_CODE" -eq 200 ]; then
-            echo "✅ Notification sent successfully! Response：$RESPONSE_BODY"
-          else
-            echo "❌ Notification failed! HTTP status：$HTTP_CODE，Response：$RESPONSE_BODY"
-            exit 1
-          fi
+          COGAN_TELEGRAM_ENABLED: ${{ vars.COGAN_TELEGRAM_ENABLED }}
+          COGAN_TELEGRAM_TARGET: ${{ vars.COGAN_TELEGRAM_TARGET }}
+          COGAN_TELEGRAM_BOT_TOKEN: ${{ secrets.COGAN_TELEGRAM_BOT_TOKEN }}
+          COGAN_TELEGRAM_CHANNEL_ID: ${{ secrets.COGAN_TELEGRAM_CHANNEL_ID }}
+          COGAN_TELEGRAM_GROUP_ID: ${{ secrets.COGAN_TELEGRAM_GROUP_ID }}
+          COGAN_TELEGRAM_GROUP_THREAD_ID: ${{ secrets.COGAN_TELEGRAM_GROUP_THREAD_ID }}
+          COGAN_NOTICE_TYPE: ${{ inputs.msg_type }}
+          COGAN_NOTICE_CONTENT: ${{ inputs.content }}
+        run: python3 scripts/telegram_notify.py notice
