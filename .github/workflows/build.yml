@@ -699,7 +699,16 @@ jobs:
             last_directive="$(awk 'NF && $1 !~ /^#/ { last=$0 } END { print last }' "$guard")"
             if [[ "$last_directive" == '$(error Please wait susfs update.)' ]]; then
               source_sha="$(git -C "$source_dir" rev-parse HEAD)"
-              echo "::error title=BakaSU upstream SUSFS compatibility block::BakaSU commit $source_sha has an unconditional SUSFS build stop. Upstream requires a compatible SUSFS update. No artifact will be generated; do not bypass or remove this guard."
+              {
+                echo "### ❌ BUILD GAGAL — BakaSU/SUSFS belum kompatibel"
+                echo
+                printf '%s\n' "- **Penyebab:** BakaSU commit \`$source_sha\` memblokir kompilasi SUSFS."
+                echo "- **Menunggu:** pembaruan [SUSFS (simonpunk)](https://gitlab.com/simonpunk/susfs4ksu) dan konfirmasi integrasi [BakaSU](https://github.com/Baka-SU/BakaSU/issues)."
+                echo "- **Tindakan:** tunggu perbaikan upstream; jangan hapus pengaman."
+                echo "- **Artifact & Release:** tidak tersedia dari build ini."
+                echo "- **Bukti:** \`kernel/tools/susfs_compat.mk\` — \`Please wait susfs update.\`"
+              } >> "$GITHUB_STEP_SUMMARY"
+              echo "::error title=BUILD GAGAL — BakaSU/SUSFS::Upstream compatibility block at BakaSU $source_sha. Wait for SUSFS/BakaSU upstream fix; kernel artifact and release are unavailable."
               exit 1
             fi
           fi
