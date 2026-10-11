@@ -14,6 +14,12 @@ import subprocess
 BACKTICK = chr(96)
 FENCE = BACKTICK * 3
 
+# These stages write authoritative component-mismatch reports from their own
+# GitHub Actions steps. GITHUB_STEP_SUMMARY is a separate file PER STEP,
+# so the final reporter must not try to detect prior reports by reading its
+# own step's summary file.
+SYNC_GATE_STEPS = {"verify_source_sync", "verify_compiled_sync"}
+
 # Stage names are stable workflow step IDs, not log-text guesses.
 # Support assignments are triage suggestions, never fault attribution.
 STAGES = {
@@ -90,7 +96,8 @@ def failing_steps(steps):
     return [(key, STAGES.get(key, (key.replace("_", " "), "Cogan integration",
                                       "A CI step failed; check its log.", None)))
             for key, value in steps.items()
-            if isinstance(value, dict) and value.get("outcome") == "failure"]
+            if isinstance(value, dict) and value.get("outcome") == "failure"
+            and key not in SYNC_GATE_STEPS]
 
 
 def format_notice(*, failures, repository, run_url, build, metadata, baka_sha,
@@ -160,8 +167,11 @@ Thank you."""
         destination = f"**Pengembang terkait:** [{upstream}]({UPSTREAM_URLS[upstream]}) — hubungi untuk meminta arahan, bukan menyatakan mereka penyebabnya."
         heading = f"🇬🇧 English — Copy report for {upstream} developers"
     else:
-        destination = "**Pengembang terkait:** periksa integrasi Cogan dahulu sebelum melaporkan bug ke proyek upstream."
-        heading = "🇬🇧 English — Copy report for Cogan integration triage"
+        destination = ("**Tujuan laporan:** internal, untuk pemilik repository Cogan (kamu). "
+                       "**Jangan kirim ke pengembang BakaSU/SUSFS/NoMount.** "
+                       "[Issues Cogan](https://github.com/cogan17/GKI_BakaSU_SUSFS/issues) "
+                       "hanya jika ingin mencatatnya di repository sendiri.")
+        heading = "🇬🇧 English — Internal Cogan triage ONLY (do not send upstream)"
 
     return (intro + destination + "\n\n"
             "<details>\n"
