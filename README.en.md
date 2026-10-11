@@ -8,8 +8,8 @@
 [![Custom Build](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/kernel-custom.yml/badge.svg)](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/kernel-custom.yml)
 [![License](https://img.shields.io/github/license/cogan17/GKI_BakaSU_SUSFS)](LICENSE)
 
-[![Telegram Channel](https://img.shields.io/badge/TELEGRAM-%40CoganKernel-2596BE?logo=telegram&logoColor=white)](https://t.me/CoganKernel) ![Telegram Group - invite pending](https://img.shields.io/badge/GROUP-Invite%20pending-6B7280?logo=telegram&logoColor=white)
-*Join the channel now. The discussion group invite link will be added when available.*
+[![Telegram Channel](https://img.shields.io/badge/TELEGRAM-%40CoganKernel-2596BE?logo=telegram&logoColor=white)](https://t.me/CoganKernel) [![Telegram Group](https://img.shields.io/badge/GROUP-%40CoganKernelGp-2596BE?logo=telegram&logoColor=white)](https://t.me/CoganKernelGp)
+*Channel: release and pre-release announcements · Group: community discussion and technical help.*
 
 **Quick links:** [Actions](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions) · [Custom Build](.github/workflows/kernel-custom.yml) · [Main Build](.github/workflows/main.yml) · [Manual Release](.github/workflows/manual-release.yml) · [Releases](https://github.com/cogan17/GKI_BakaSU_SUSFS/releases)
 
