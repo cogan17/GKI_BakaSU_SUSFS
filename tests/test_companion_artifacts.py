@@ -225,6 +225,13 @@ enum { NM_CMD_UNSPEC, NM_CMD_GET_VERSION, NM_CMD_ADD_RULE, };
             "https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/runs/123",
             self.meta, "prebuild", "c" * 40, "b" * 40)
         self.assertIn("Penyebab:", rendered)
+        self.assertIn("<summary>🇮🇩 Bahasa Indonesia — laporan kegagalan</summary>", rendered)
+        self.assertIn("<summary>🇬🇧 English — failure report and evidence</summary>", rendered)
+        self.assertIn("**Reason:** BakaSU upstream explicitly blocks compilation", rendered)
+        self.assertIn("**Evidence:**", rendered)
+        self.assertIn("**Action:** The build was stopped", rendered)
+        self.assertIn("**Validation stage:** prebuild. [Open build logs]", rendered)
+        self.assertEqual(rendered.count("<!-- COGAN_VERIFIED_COMPAT_FAILURE -->"), 1)
         url = "https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/runs/123"
         self.assertIn(f"**Workflow:** [{url}]({url})", rendered)
         self.assertEqual(rendered.count(f"**Workflow:** [{url}]({url})"), 1)
