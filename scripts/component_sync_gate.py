@@ -60,6 +60,42 @@ def add(issues, part, reason, proof, upstream=False):
     issues.append(Issue(part, reason, proof, upstream))
 
 
+def _nomount_protocol(header):
+    """Extract common ABI portions (user-space u32 and kernel u32 are equivalent)."""
+    text = read(header)
+    magic = re.search(r"^\s*#define\s+NOMOUNT_MAGIC_SIG\s+([^\s/]+)", text, re.M)
+    cmd = re.search(r"enum\s*\{\s*(NM_CMD_UNSPEC.*?)\}\s*;", text, re.S)
+    payload = re.search(
+        r"struct\s+nm_payload\s*\{(.*?)\}\s*__attribute__\s*\(\(packed\)\)",
+        text, re.S)
+    if not (magic and cmd and payload):
+        return None
+    cmds = [re.sub(r"\s+", "", part) for part in cmd.group(1).split(",") if part.strip()]
+    layout = []
+    for field in payload.group(1).split(";"):
+        field = re.sub(r"/\*.*?\*/", "", field, flags=re.S).strip()
+        if not field:
+            continue
+        field = re.sub(r"\bu64\b", "unsigned long long", field)
+        field = re.sub(r"\bu32\b", "unsigned int", field)
+        field = re.sub(r"\bu16\b", "unsigned short", field)
+        layout.append(" ".join(field.split()))
+    return magic.group(1), cmds, layout
+
+
+def check_nomount_protocol(source):
+    """Compare NoMount kernel & userspace magic, command IDs and packed ABI."""
+    k = _nomount_protocol(source / "kernel/src/nomount.h")
+    u = _nomount_protocol(source / "userspace/src/nm.h")
+    if k is None or u is None:
+        return Issue("NoMount", "ABI NoMount tidak dapat diverifikasi.",
+                     "Missing or changed NoMount kernel/userspace protocol definitions")
+    if k != u:
+        return Issue("NoMount", "ABI kernel NoMount dan userspace tidak sinkron.",
+                     "NOMOUNT_MAGIC_SIG, NM_CMD IDs or packed nm_payload differ")
+    return None
+
+
 def check_sources(*, meta, bakasu, kernel, susfs, use_susfs, use_nomount, config,
                   stage="prebuild", module=None):
     """Return objective errors. Stage prepublish inspects the compiled .config."""
@@ -103,6 +139,22 @@ def check_sources(*, meta, bakasu, kernel, susfs, use_susfs, use_nomount, config
                 if not (kernel / file).is_file():
                     add(issues, "SUSFS", "Sumber SUSFS tidak terintegrasi di kernel.",
                         f"common/{file} absent")
+            kbuild = read(bakasu / "kernel/Kbuild")
+            guard = read(bakasu / "kernel/tools/susfs_compat.mk")
+            if "tools/susfs_compat.mk" in kbuild:
+                directives = [line.strip() for line in guard.splitlines()
+                              if line.strip() and not line.lstrip().startswith("#")]
+                if not guard:
+                    add(issues, "BakaSU", "Pemeriksaan kompatibilitas SUSFS upstream hilang.",
+                        "BakaSU kernel/Kbuild includes missing tools/susfs_compat.mk")
+                elif directives and directives[-1] == "$(error Please wait susfs update.)":
+                    add(issues, "BakaSU", "BakaSU upstream memblokir SUSFS secara eksplisit.",
+                        "BakaSU/kernel/tools/susfs_compat.mk: Please wait susfs update.",
+                        upstream=True)
+            rejects = list(kernel.rglob("*.rej"))
+            if rejects:
+                add(issues, "Kernel", "Patch kernel memiliki bagian yang ditolak.",
+                    f"{len(rejects)} .rej file(s) need inspection before compilation")
     else:
         if stage == "prepublish" and "CONFIG_KSU_SUSFS=y" in flags:
             add(issues, "Kernel", "SUSFS aktif di Image meski tidak diminta.",
@@ -134,6 +186,10 @@ def check_sources(*, meta, bakasu, kernel, susfs, use_susfs, use_nomount, config
                 if not (nm / file).is_file():
                     add(issues, "NoMount", "Sumber NoMount kernel/userspace/metamodule tidak lengkap.",
                         f"common/NoMount/{file} missing", upstream=True)
+            if git(nm, "rev-parse", "HEAD") == expected_nm:
+                mismatch = check_nomount_protocol(nm)
+                if mismatch:
+                    issues.append(mismatch)
         else:
             if not module or not module.is_file():
                 add(issues, "NoMount", "Paket NoMount untuk kernel ini tidak tersedia.",
