@@ -682,6 +682,29 @@ jobs:
             --directory "$RUNNER_TEMP/cogan-companions" \
             --source "$KERNEL_ROOT/KernelSU"
 
+      # Do not bypass upstream's deliberate SUSFS compile-time guard. Detect the
+      # currently unconditional failure immediately after pinning BakaSU, rather
+      # than spending 10+ minutes compiling a kernel that cannot succeed.
+      - name: Preflight BakaSU and SUSFS upstream compatibility
+        if: inputs.clean_build != true && inputs.enable_susfs && inputs.ksu_variant == 'BakaSU'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir="$KERNEL_ROOT/KernelSU"
+          guard="$source_dir/kernel/tools/susfs_compat.mk"
+          kbuild="$source_dir/kernel/Kbuild"
+          test -f "$kbuild" || { echo "::error::BakaSU kernel Kbuild is missing"; exit 1; }
+          test -f "$guard" || { echo "::error::BakaSU SUSFS compatibility file is missing"; exit 1; }
+          if grep -Fq 'include $(KSU_SRC)/tools/susfs_compat.mk' "$kbuild"; then
+            last_directive="$(awk 'NF && $1 !~ /^#/ { last=$0 } END { print last }' "$guard")"
+            if [[ "$last_directive" == '$(error Please wait susfs update.)' ]]; then
+              source_sha="$(git -C "$source_dir" rev-parse HEAD)"
+              echo "::error title=BakaSU upstream SUSFS compatibility block::BakaSU commit $source_sha has an unconditional SUSFS build stop. Upstream requires a compatible SUSFS update. No artifact will be generated; do not bypass or remove this guard."
+              exit 1
+            fi
+          fi
+          echo "No unconditional upstream BakaSU SUSFS build block detected; kernel compilation remains the final compatibility check."
+
       # ==================== Apply SUSFS patches ====================
       # SUSFS (Super User SUS FileSystem) hides traces of root
       - name: Apply SUSFS patches
