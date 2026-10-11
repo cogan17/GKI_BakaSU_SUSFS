@@ -234,6 +234,53 @@ def check_sources(*, meta, bakasu, kernel, susfs, use_susfs, use_nomount, config
     return issues
 
 
+# Every generated issue has a distinct English explanation. Never insert the
+# Indonesian owner-facing reason into the developer's copy-ready report.
+ENGLISH_REASONS = {
+    "ABI NoMount tidak dapat diverifikasi.": "The NoMount kernel/userspace ABI definitions could not be verified.",
+    "ABI kernel NoMount dan userspace tidak sinkron.": "The NoMount kernel and userspace ABI definitions do not match.",
+    "Commit BakaSU Manager dan kernel tidak cocok.": "The BakaSU Manager source commit does not match the kernel's BakaSU commit.",
+    "Versi driver atau metadata manager belum terverifikasi.": "The manager metadata or kernel driver version has not been verified.",
+    "Sertifikat kedua APK manager tidak cocok.": "The two official manager APKs have different signing certificate records.",
+    "Konfigurasi kernel tidak mengaktifkan BakaSU Manager bawaan.": "The kernel configuration does not enable the required built-in BakaSU manager support.",
+    "Sumber SUSFS tidak tersedia/terverifikasi.": "The checked-out SUSFS source commit is unavailable or unverified.",
+    "Commit SUSFS berubah antara kompilasi dan publikasi.": "The SUSFS source commit changed between compilation and artifact publication.",
+    "Sumber SUSFS tidak sama dengan commit tercatat.": "The checked-out SUSFS source commit differs from the recorded commit.",
+    "SUSFS diaktifkan pada workflow tetapi tidak di konfigurasi kernel.": "SUSFS was enabled in the workflow but not in the kernel configuration.",
+    "Sumber SUSFS tidak terintegrasi di kernel.": "Required SUSFS source files were not integrated into the kernel.",
+    "Pemeriksaan kompatibilitas SUSFS upstream hilang.": "A SUSFS compatibility guard referenced by BakaSU is missing.",
+    "BakaSU upstream memblokir SUSFS secara eksplisit.": "BakaSU upstream explicitly blocks compilation with the current SUSFS integration.",
+    "Patch kernel memiliki bagian yang ditolak.": "One or more kernel patches have rejected hunks.",
+    "SUSFS aktif di Image meski tidak diminta.": "SUSFS is enabled in the compiled Image although it was not requested.",
+    "Commit NoMount tidak terkunci pada satu sumber.": "The NoMount source commit was not pinned.",
+    "Commit NoMount kernel berbeda dari sumber yang dipilih.": "The kernel's NoMount checkout differs from the selected source commit.",
+    "NoMount diminta tetapi driver bawaan tidak aktif.": "NoMount was requested but its built-in kernel driver is not enabled.",
+    "Kernel tidak menggunakan sumber NoMount yang sama.": "The kernel's NoMount symlink points to a different source tree.",
+    "NoMount tidak terdaftar untuk kompilasi kernel.": "NoMount is missing from the kernel build Makefile.",
+    "Kconfig NoMount tidak terintegrasi.": "NoMount is missing from the kernel Kconfig integration.",
+    "Sumber NoMount kernel/userspace/metamodule tidak lengkap.": "Required NoMount kernel, userspace, or metamodule source files are missing.",
+    "Paket NoMount untuk kernel ini tidak tersedia.": "The NoMount metamodule ZIP for this kernel is unavailable.",
+    "Paket NoMount tidak cocok dengan driver dalam kernel.": "The packaged NoMount metamodule does not match the kernel driver.",
+    "Commit NoMount tercatat meskipun fitur tidak diminta.": "A NoMount source commit is present even though NoMount was disabled.",
+    "NoMount aktif di Image meski tidak diminta.": "NoMount is enabled in the compiled Image although it was not requested.",
+}
+DYNAMIC_ENGLISH_REASONS = (
+    (re.compile(r"Manager (normal|spoofed) tidak sama dengan versi driver (\d+)\."), lambda m: f"The {m[1]} manager version does not match kernel driver version {m[2]}."),
+    (re.compile(r"Sertifikat manager (normal|spoofed) tidak terverifikasi\."), lambda m: f"The {m[1]} manager signing certificate record is unverified."),
+)
+
+
+def english_reason(reason):
+    if reason in ENGLISH_REASONS:
+        return ENGLISH_REASONS[reason]
+    for pattern, translate in DYNAMIC_ENGLISH_REASONS:
+        matched = pattern.fullmatch(reason)
+        if matched:
+            return translate(matched)
+    # Fail explicitly rather than placing Indonesian text in a developer report.
+    raise ValueError(f"Missing English bug-report translation: {reason}")
+
+
 def render(issues, build, run_url, meta, stage, susfs_sha, nomount_sha):
     if not issues:
         return ""
@@ -261,7 +308,7 @@ def render(issues, build, run_url, meta, stage, susfs_sha, nomount_sha):
         else:
             out.append("**Kirim:** laporan ini untuk pemeriksaan internal Cogan; jangan kirim ke upstream sebelum penyebab terkonfirmasi.")
         out.append("")
-        observations = "\n".join(f"- {safe(x.reason)} | Evidence: {safe(x.evidence)}" for x in problems)
+        observations = "\n".join(f"- {safe(english_reason(x.reason))} | Evidence: {safe(x.evidence)}" for x in problems)
         en = (f"Title: Build compatibility inquiry — {safe(part)} ({safe(build)})\n\n"
               "Hello maintainers,\n\n"
               "I maintain the Cogan kernel build repository. The validation gate found "
