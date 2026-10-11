@@ -119,3 +119,19 @@ Droidspaces 补丁具有实验性，不同设备和内核版本可能需要尝�
 - 感谢 **BakaSU、KernelSU、SUSFS、NoMount、Re-Kernel、AnyKernel3** 与 Android GKI 的开发者及贡献者。
 
 本仓库采用 **GPL-2.0** 许可证。[上游 Telegram 频道](https://t.me/BakaSUKernelBuilds) 属于原项目社区资源，并非 Cogan 分支专用支持频道。
+
+## 配套管理器、内核与 NoMount
+
+BakaSU 构建会提供官方普通版和 spoofed 版管理器 APK、AnyKernel3 内核 ZIP，
+以及启用 `use_nomount` 时的 NoMount 元模块 ZIP。两个 APK 保持官方签名，
+来自与内核驱动**同一提交**的最终 `Build Manager` 产物；构建会检查版本号、
+内核接受的官方证书以及 arm64 `ksud`。
+
+NoMount 驱动和用户空间/元模块使用同一个固定的 `dev` 提交。此元模块仅适用于
+内置 NoMount（`CONFIG_NOMOUNT=y`），不包含 LKM。安装一个管理器 APK，刷入
+配套内核并重启，然后通过 BakaSU 安装 NoMount 并再次重启。构建检查不代替真机测试。
+
+如指定提交没有完整且未过期的官方 APK，构建会在编译前停止，不会静默替换版本。
+`*-bundle.json` 记录源码提交、版本、APK 来源和校验值。
+**Manual Release From Run** 校验完整性后发布指定运行中的原始配套文件，支持多个
+内核；旧运行仍可发布内核，但会明确标注缺少配套管理器和元模块。

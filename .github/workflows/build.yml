@@ -228,6 +228,35 @@ jobs:
           echo "$GITHUB_WORKSPACE/git-repo" >> "$GITHUB_PATH"
           echo "REPO=$GITHUB_WORKSPACE/git-repo/repo" >> $GITHUB_ENV
 
+      - name: Resolve and download matching official managers
+        id: companions
+        if: inputs.clean_build != true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          KSU_REQUESTED_REF: ${{ inputs.ksu_branch }}
+          USE_NOMOUNT: ${{ inputs.use_nomount }}
+        run: |
+          set -euo pipefail
+          args=()
+          if [ "$USE_NOMOUNT" = true ]; then args+=(--nomount); fi
+          python3 scripts/companion_artifacts.py fetch \
+            --ref "${KSU_REQUESTED_REF:-main}" \
+            --directory "$RUNNER_TEMP/cogan-companions" "${args[@]}"
+
+      # The disk cleanup above removes preinstalled Java and Android SDKs.
+      - name: Set up Java for APK signature verification
+        if: inputs.clean_build != true
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android APK verification tools
+        if: inputs.clean_build != true
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'build-tools;36.0.0'
+
       # ==================== Show configuration file content ====================
       - name: Show configuration information
         id: show_configuration_information
@@ -588,19 +617,11 @@ jobs:
         id: ksu-branch
         if: inputs.clean_build != true
         run: |
-          branch_input="${{ inputs.ksu_branch }}"
-
-          # Use the supplied custom branch or commit hash directly
-          if [ -n "$branch_input" ]; then
-            BRANCH="$branch_input"
-            echo "Using custom branch/commit: $branch_input"
-          else
-            # BakaSU uses the main branch by default
-            BRANCH="main"
-          fi
-
-          echo "BRANCH=$BRANCH" >> $GITHUB_ENV
-          echo "KSU branch: $BRANCH"
+          # Immutable source selected alongside the official APK artifacts.
+          BRANCH="${{ steps.companions.outputs.bakasu_commit }}"
+          [[ "$BRANCH" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
+          echo "KSU commit: $BRANCH"
 
       # ==================== Add KernelSU ====================
       # Add BakaSU
@@ -611,7 +632,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "Add BakaSU..."
-          curl -fLSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" | bash -s -- "$BRANCH"
+          curl -fLSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/$BRANCH/kernel/setup.sh" | bash -s -- "$BRANCH"
 
           if [ -d "KernelSU/.git" ]; then
             KSU_ACTUAL_REF=$(git -C KernelSU rev-parse HEAD)
@@ -627,6 +648,13 @@ jobs:
             echo "::error::KernelSU repository is missing after BakaSU installation"
             exit 1
           fi
+
+      - name: Verify official APK signatures and driver version
+        if: inputs.clean_build != true
+        run: |
+          python3 scripts/companion_artifacts.py verify \
+            --directory "$RUNNER_TEMP/cogan-companions" \
+            --source "$KERNEL_ROOT/KernelSU"
 
       # ==================== Apply SUSFS patches ====================
       # SUSFS (Super User SUS FileSystem) hides traces of root
@@ -1365,9 +1393,14 @@ jobs:
         if: inputs.clean_build != true && inputs.use_nomount
         working-directory: ${{ env.KERNEL_ROOT }}/common
         run: |
-          set -e
-          echo "Integrating NoMount (dev branch)..."
-          curl -sSL https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh | bash -s dev
+          set -euo pipefail
+          NOMOUNT_COMMIT="${{ steps.companions.outputs.nomount_commit }}"
+          [[ "$NOMOUNT_COMMIT" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          curl -fLSs "https://raw.githubusercontent.com/maxsteeel/nomount/$NOMOUNT_COMMIT/kernel/setup.sh" \
+            -o "$RUNNER_TEMP/nomount-setup.sh"
+          bash "$RUNNER_TEMP/nomount-setup.sh" "$NOMOUNT_COMMIT"
+          [[ "$(git -C NoMount rev-parse HEAD)" == "$NOMOUNT_COMMIT" ]] || exit 1
+          echo "NOMOUNT_COMMIT=$NOMOUNT_COMMIT" >> "$GITHUB_ENV"
 
           # Enable built-in NoMount kernel configuration
           if ! grep -q "^CONFIG_NOMOUNT=y" "$DEFCONFIG"; then
@@ -1384,6 +1417,7 @@ jobs:
         run: |
           cat >> "$DEFCONFIG" << 'EOF'
           CONFIG_KSU=y
+          CONFIG_IKCONFIG=y
           CONFIG_TMPFS_XATTR=y
           CONFIG_TMPFS_POSIX_ACL=y
           EOF
@@ -1748,6 +1782,68 @@ jobs:
           fi
           zip -r "../$ZIP_NAME" ./*
 
+      - name: Set up Zig for matching NoMount userspace
+        if: inputs.clean_build != true && inputs.use_nomount
+        uses: jetsung/setup-zig@v0.0.4
+        with:
+          version: '0.15.2'
+
+      - name: Package matching built-in NoMount metamodule
+        if: inputs.clean_build != true && inputs.use_nomount
+        run: |
+          bash scripts/package_nomount.sh "$KERNEL_ROOT/common/NoMount" \
+            "$NOMOUNT_COMMIT" "$GITHUB_WORKSPACE/companion-files" "$CONFIG-$BUILD_VARIANT"
+
+      - name: Verify and record complete bundle
+        if: inputs.clean_build != true
+        run: |
+          set -euo pipefail
+          # Source flags alone are insufficient: inspect the actual packaged Image.
+          bash "$KERNEL_ROOT/common/scripts/extract-ikconfig" "$ANYKERNEL3/Image" \
+            > "$RUNNER_TEMP/cogan-bundle.config"
+          python3 scripts/companion_artifacts.py finalize \
+            --directory "$RUNNER_TEMP/cogan-companions" \
+            --destination companion-files --prefix "$CONFIG-$BUILD_VARIANT" \
+            --config "$RUNNER_TEMP/cogan-bundle.config" \
+            --kernel "$CONFIG-$BUILD_VARIANT-AnyKernel3.zip" \
+            --module "${NOMOUNT_MODULE:-}"
+
+      - name: Upload normal manager APK
+        if: inputs.clean_build != true
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-BakaSU-normal
+          path: companion-files/*-normal.apk
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload spoofed manager APK
+        if: inputs.clean_build != true
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-BakaSU-spoofed
+          path: companion-files/*-spoofed.apk
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload matching NoMount metamodule
+        if: inputs.clean_build != true && inputs.use_nomount
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-NoMount
+          path: companion-files/*-NoMount-*.zip
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload bundle source and checksum manifest
+        if: inputs.clean_build != true
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-bundle-manifest
+          path: companion-files/*-bundle.json
+          archive: false
+          if-no-files-found: error
+
       # ==================== Build boot image (Android 12) ====================
       # Android 12 requires extracting ramdisk from certified GKI images
 #      - name: Build boot image (Android 12)
@@ -1842,6 +1938,7 @@ jobs:
         id: upload_ready_to_flash_zip
         uses: actions/upload-artifact@v7
         with:
+          name: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-AnyKernel3
           path: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-AnyKernel3.zip
           if-no-files-found: error
           archive: false
