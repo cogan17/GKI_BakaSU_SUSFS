@@ -8,6 +8,9 @@
 [![Custom Build](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/kernel-custom.yml/badge.svg)](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/kernel-custom.yml)
 [![Lisensi](https://img.shields.io/github/license/cogan17/GKI_BakaSU_SUSFS)](LICENSE)
 
+[![Telegram Channel](https://img.shields.io/badge/TELEGRAM-%40CoganKernel-2596BE?logo=telegram&logoColor=white)](https://t.me/CoganKernel) ![Telegram Group - invite pending](https://img.shields.io/badge/GROUP-Invite%20pending-6B7280?logo=telegram&logoColor=white)
+*Channel sudah bisa diikuti. Tautan undangan grup diskusi akan ditambahkan setelah tersedia.*
+
 **Tautan cepat:** [Actions](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions) · [Custom Build](.github/workflows/kernel-custom.yml) · [Build Kernel](.github/workflows/main.yml) · [Manual Release](.github/workflows/manual-release.yml) · [Releases](https://github.com/cogan17/GKI_BakaSU_SUSFS/releases)
 
 ## Keunggulan Cogan Kernel
