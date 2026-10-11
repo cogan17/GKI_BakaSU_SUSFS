@@ -10,6 +10,19 @@
 
 **Tautan cepat:** [Actions](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions) · [Custom Build](.github/workflows/kernel-custom.yml) · [Build Kernel](.github/workflows/main.yml) · [Manual Release](.github/workflows/manual-release.yml) · [Releases](https://github.com/cogan17/GKI_BakaSU_SUSFS/releases)
 
+## Keunggulan Cogan Kernel
+
+Cogan berfokus pada **build yang dapat ditelusuri dan pemeriksaan kompatibilitas berlapis**, bukan sekadar berhasil mengompilasi kernel. Ini adalah kemampuan workflow, **bukan jaminan bebas bootloop, kernel panic, atau brick**.
+
+- **Pemeriksaan sebelum build:** memvalidasi pasangan Android GKI/KMI, commit sumber, konfigurasi kernel, dan pengaman kompatibilitas upstream. Jika ada ketidakcocokan yang terdeteksi, build dihentikan (*fail closed*).
+- **BakaSU Manager dan kernel yang sepadan:** mengambil APK manager normal dan spoofed resmi dari hasil build untuk commit BakaSU yang sama dengan driver kernel; memeriksa metadata versi, sertifikat yang diterima kernel, dan keberadaan `ksud` arm64.
+- **Sinkronisasi NoMount:** sumber driver kernel dan metamodule/userspace dikunci ke commit NoMount yang sama, dengan pemeriksaan paket dan identitas sumber.
+- **Artefak yang jelas dan terlacak:** paket AnyKernel3 siap-flash, APK pendamping, metamodule bila diaktifkan, serta `*-bundle.json` yang mencatat commit, asal berkas, versi, dan checksum. Ketersediaan paket tetap bergantung pada keberhasilan build dan validasi.
+- **Pengamanan publikasi:** Manual Release From Run memeriksa kelengkapan dan integritas berkas sebelum menerbitkan hasil build, tanpa mengganti komponen dengan versi lain secara diam-diam.
+- **Laporan kegagalan yang bisa ditindaklanjuti:** GitHub Actions Summary memuat hasil pemeriksaan, bukti teknis, dan laporan dalam beberapa bahasa untuk membantu pelacakan masalah maupun komunikasi dengan upstream.
+
+**Status SUSFS:** jika BakaSU upstream masih melarang kombinasi SUSFS yang dipilih, pemeriksaan kompatibilitas akan menghentikan build. Jangan menonaktifkan pengaman ini hanya untuk menghasilkan ZIP. Lolos CI pun tidak menggantikan pengujian pada perangkat nyata dan persiapan pemulihan.
+
 ## Deskripsi Proyek
 
 Repository ini membangun kernel Android GKI melalui GitHub Actions dengan **BakaSU + SUSFS** dan integrasi opsional seperti NoMount, ZRAM, BBG, serta Re-Kernel. Hasil build yang sukses menyediakan paket **AnyKernel3 ZIP**. Pilih `clean_build` untuk mengecualikan BakaSU, SUSFS, dan patch opsional.
@@ -111,15 +124,6 @@ Jika `config/stock_defconfig` ada di repository, build akan otomatis menggunakan
 
 Workflow [Perbarui Data Versi GKI](.github/workflows/update-gki-data.yml) berjalan otomatis setiap hari Senin pukul UTC 08:00, dan juga dapat dipicu secara manual. Workflow menjalankan tes sinkronisasi, memperbarui JSON, memvalidasi matriks build, dan melakukan commit perubahan data.
 
-## Ucapan Terima Kasih
-
-- **Proyek asli dan pengembang utama:** [coolzyd9107 / GKI_BakaSU_SUSFS](https://github.com/coolzyd9107/GKI_BakaSU_SUSFS).
-- **Pemeliharaan dan modifikasi fork Cogan:** [Cogan (cogan17)](https://github.com/cogan17).
-- **Riwayat proyek dan kontributor:** [zzh20188](https://github.com/zzh20188), [zhuzhuzihan](https://github.com/zhuzhuzihan), [TanakaLun](https://github.com/TanakaLun), [luyancib](https://github.com/luyancib), [AlexLiuDev233](https://github.com/AlexLiuDev233), dan [cctv18](https://github.com/cctv18).
-- Terima kasih kepada pengembang dan kontributor **BakaSU, KernelSU, SUSFS, NoMount, Re-Kernel, AnyKernel3**, dan Android GKI.
-
-Repository ini menggunakan lisensi **GPL-2.0**. [Kanal Telegram upstream](https://t.me/BakaSUKernelBuilds) merupakan sumber komunitas asli, bukan kanal dukungan khusus fork Cogan.
-
 ## Paket manager, kernel, dan NoMount yang sesuai
 
 Build BakaSU menghasilkan APK manager **normal** dan **spoofed** resmi, ZIP kernel
@@ -139,3 +143,12 @@ build berhenti sebelum kompilasi; tidak beralih diam-diam ke versi lain.
 **Manual Release From Run** menerbitkan file asli dari run tersebut setelah
 memeriksa kelengkapan dan checksum, termasuk untuk beberapa kernel sekaligus.
 Run lama tetap dapat dirilis sebagai kernel saja, dengan keterangan yang jelas.
+
+## Ucapan Terima Kasih
+
+- **Proyek asli dan pengembang utama:** [coolzyd9107 / GKI_BakaSU_SUSFS](https://github.com/coolzyd9107/GKI_BakaSU_SUSFS).
+- **Pemeliharaan dan modifikasi fork Cogan:** [Cogan (cogan17)](https://github.com/cogan17).
+- **Riwayat proyek dan kontributor:** [zzh20188](https://github.com/zzh20188), [zhuzhuzihan](https://github.com/zhuzhuzihan), [TanakaLun](https://github.com/TanakaLun), [luyancib](https://github.com/luyancib), [AlexLiuDev233](https://github.com/AlexLiuDev233), dan [cctv18](https://github.com/cctv18).
+- Terima kasih kepada pengembang dan kontributor **BakaSU, KernelSU, SUSFS, NoMount, Re-Kernel, AnyKernel3**, dan Android GKI.
+
+Repository ini menggunakan lisensi **GPL-2.0**. [Kanal Telegram upstream](https://t.me/BakaSUKernelBuilds) merupakan sumber komunitas asli, bukan kanal dukungan khusus fork Cogan.
