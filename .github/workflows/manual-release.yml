@@ -22,6 +22,9 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    concurrency:
+      group: cogan-release-${{ inputs.source_run_id }}
+      cancel-in-progress: false
     steps:
       - name: Verify official Cogan release repository
         env:
@@ -86,6 +89,22 @@ jobs:
             --run-id "$RUN_ID" --workflow-commit "$SOURCE_SHA" "${args[@]}"
           echo "title=Cogan - build $RUN_ID" >> "$GITHUB_OUTPUT"
 
+      - name: Check previous release state to avoid duplicate announcements
+        id: previous_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          tag="BakaSU-run-${SOURCE_RUN_ID}"
+          if gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" > prior-release.json 2>/dev/null; then
+            prior_type="$(jq -r 'if .prerelease then "Pre-Release" else "Release" end' prior-release.json)"
+            echo "type=$prior_type" >> "$GITHUB_OUTPUT"
+          else
+            # A non-existent tag is normal on first publication; publication itself validates access.
+            echo "type=none" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish original matched build files
         uses: softprops/action-gh-release@v2
         with:
@@ -104,14 +123,14 @@ jobs:
           echo "### Kernel + BakaSU managers + NoMount (when enabled)" >> "$GITHUB_STEP_SUMMARY"
           echo "[Download from Releases]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/BakaSU-run-${{ inputs.source_run_id }})" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Notify Cogan Telegram destinations after release
+      - name: Notify Cogan channel only for new stable or prerelease publication
+        if: ${{ steps.previous_release.outputs.type != inputs.release_type && github.run_attempt == 1 }}
+        continue-on-error: true
         env:
           COGAN_TELEGRAM_ENABLED: ${{ vars.COGAN_TELEGRAM_ENABLED }}
-          COGAN_TELEGRAM_TARGET: ${{ vars.COGAN_TELEGRAM_TARGET }}
           COGAN_TELEGRAM_BOT_TOKEN: ${{ secrets.COGAN_TELEGRAM_BOT_TOKEN }}
           COGAN_TELEGRAM_CHANNEL_ID: ${{ secrets.COGAN_TELEGRAM_CHANNEL_ID }}
-          COGAN_TELEGRAM_GROUP_ID: ${{ secrets.COGAN_TELEGRAM_GROUP_ID }}
-          COGAN_TELEGRAM_GROUP_THREAD_ID: ${{ secrets.COGAN_TELEGRAM_GROUP_THREAD_ID }}
           COGAN_RELEASE_RUN_ID: ${{ inputs.source_run_id }}
           COGAN_RELEASE_TYPE: ${{ inputs.release_type }}
-        run: python3 scripts/telegram_notify.py release
+          COGAN_RELEASE_NAME: ${{ steps.package.outputs.title }}
+        run: python3 scripts/telegram_notify.py manual
