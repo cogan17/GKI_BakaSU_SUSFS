@@ -228,12 +228,20 @@ enum { NM_CMD_UNSPEC, NM_CMD_GET_VERSION, NM_CMD_ADD_RULE, };
         url = "https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/runs/123"
         self.assertIn(f"**Workflow:** [{url}]({url})", rendered)
         self.assertEqual(rendered.count(f"**Workflow:** [{url}]({url})"), 1)
-        report = rendered.split("```text", 1)[1].split("```", 1)[0]
-        self.assertIn(f"Workflow: {url}", report)
-        self.assertIn("BakaSU upstream explicitly blocks compilation", report)
-        self.assertNotIn("memblokir", report)
-        self.assertNotIn("tidak sinkron", report)
-        self.assertNotIn("Penyebab", report)
+        self.assertIn("**Issue Title — copy separately into GitHub Title:**", rendered)
+        self.assertIn("**Issue Description — copy separately into GitHub Description:**", rendered)
+        blocks = rendered.split("```text")
+        self.assertEqual(len(blocks), 3, "Title and Description must have separate copy buttons")
+        title = blocks[1].split("```", 1)[0].strip()
+        description = blocks[2].split("```", 1)[0].strip()
+        self.assertEqual(title, "Build compatibility inquiry — BakaSU (android14-6.1.177-lts-r9)")
+        self.assertTrue(description.startswith("Hello maintainers,"))
+        self.assertNotIn("Title:", description)
+        self.assertIn(f"Workflow: {url}", description)
+        self.assertIn("BakaSU upstream explicitly blocks compilation", description)
+        self.assertNotIn("memblokir", description)
+        self.assertNotIn("tidak sinkron", description)
+        self.assertNotIn("Penyebab", description)
 
     def test_every_detected_reason_has_english_translation(self):
         # Translation coverage includes all issue reasons created by the gate,
