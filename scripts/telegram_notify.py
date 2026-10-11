@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Opt-in Telegram notifications for official Cogan GitHub Actions.
+"""Notify the linked Cogan channel for *published releases only*.
 
-This sender never reads legacy upstream secrets. Notifications remain disabled
-until enabled explicitly, and only one destination is used per invocation so a
-channel linked to a discussion group does not produce duplicate posts.
+Only one Telegram send is made per invocation. No build, test, arbitrary notice,
+or general message functionality is exposed by this sender.
 """
 
 import html
@@ -11,9 +10,10 @@ import json
 import os
 import re
 import sys
-from urllib import error, request
+from urllib import error, parse, request
 
 OFFICIAL_REPO = "cogan17/GKI_BakaSU_SUSFS"
+OFFICIAL_REPO_ID = "1397614374"
 API_TIMEOUT = 15
 
 
@@ -21,115 +21,122 @@ def escape(value: str) -> str:
     return html.escape(str(value), quote=True)
 
 
-def notification_text(kind: str) -> str:
-    if kind == "release":
-        run_id = os.environ.get("COGAN_RELEASE_RUN_ID", "")
+def release_details(source: str):
+    if source == "manual":
+        run_id = os.environ.get("COGAN_RELEASE_RUN_ID", "").strip()
         if not re.fullmatch(r"[0-9]+", run_id):
-            raise ValueError("COGAN_RELEASE_RUN_ID must be a numeric GitHub Actions run ID")
-        release_type = os.environ.get("COGAN_RELEASE_TYPE", "Release")
+            raise ValueError("COGAN_RELEASE_RUN_ID must be numeric")
+        release_type = os.environ.get("COGAN_RELEASE_TYPE", "").strip()
+        if release_type not in ("Release", "Pre-Release"):
+            raise ValueError("Invalid release type")
         tag = f"BakaSU-run-{run_id}"
-        url = f"https://github.com/{OFFICIAL_REPO}/releases/tag/{tag}"
-        return (
-            "<b>New official Cogan kernel release</b>\n\n"
-            f"Type: <code>{escape(release_type)}</code>\n"
-            f"Tag: <code>{escape(tag)}</code>\n"
-            f'<a href="{escape(url)}">Download verified release bundle</a>\n\n'
-            "Independent community project; verify device and kernel compatibility before flashing."
-        )
-    if kind == "notice":
-        message_type = os.environ.get("COGAN_NOTICE_TYPE", "notice")[:120]
-        content = os.environ.get("COGAN_NOTICE_CONTENT", "")
-        if not content.strip():
-            raise ValueError("COGAN_NOTICE_CONTENT must not be blank")
-        # Telegram sendMessage allows up to 4096 characters after entity parsing.
-        content = content[:3200]
-        return (
-            "<b>Cogan project notification</b>\n\n"
-            f"Type: <code>{escape(message_type)}</code>\n\n"
-            f"<pre>{escape(content)}</pre>\n\n"
-            f'<a href="https://github.com/{OFFICIAL_REPO}">Official Cogan repository</a>'
-        )
-    raise ValueError("Unknown notification kind")
+        name = os.environ.get("COGAN_RELEASE_NAME", "").strip() or f"Cogan - build {run_id}"
+        prerelease = release_type == "Pre-Release"
+    elif source == "published":
+        if os.environ.get("GITHUB_EVENT_NAME") != "release":
+            raise ValueError("Expected GitHub release event")
+        path = os.environ.get("GITHUB_EVENT_PATH", "")
+        with open(path, "r", encoding="utf-8") as stream:
+            event = json.load(stream)
+        repo = event.get("repository") or {}
+        release = event.get("release") or {}
+        if (event.get("action") != "published"
+                or repo.get("full_name") != OFFICIAL_REPO
+                or repo.get("id") != int(OFFICIAL_REPO_ID)
+                or release.get("draft") is not False
+                or release.get("prerelease") not in (True, False)
+                or not release.get("published_at")):
+            print("::notice::Not a published official Cogan release; skipped.")
+            return None
+        tag = release.get("tag_name", "")
+        name = release.get("name", "") or tag
+        prerelease = release["prerelease"]
+    else:
+        raise ValueError("Only published release sources are supported")
+
+    if not isinstance(tag, str) or not tag or len(tag) > 180:
+        raise ValueError("Invalid release tag")
+    if not isinstance(name, str):
+        name = tag
+    return {"tag": tag, "name": name[:180], "prerelease": prerelease}
 
 
-def destinations():
-    """Choose one destination; linked channel posts already appear in the group."""
-    channel_id = os.getenv("COGAN_TELEGRAM_CHANNEL_ID", "").strip()
-    group_id = os.getenv("COGAN_TELEGRAM_GROUP_ID", "").strip()
-    thread_id = os.getenv("COGAN_TELEGRAM_GROUP_THREAD_ID", "").strip()
-    target = (os.getenv("COGAN_TELEGRAM_TARGET") or "").strip().lower() or "auto"
+def notification_text(details):
+    prerelease = details["prerelease"]
+    state = "Pre-Release / Pra-rilis" if prerelease else "Stable Release / Rilis Stabil"
+    label = "Cogan Kernel — Pre-Release" if prerelease else "Cogan Kernel — Stable Release"
+    url = f"https://github.com/{OFFICIAL_REPO}/releases/tag/{parse.quote(details['tag'], safe='')}"
+    return (
+        f"<b>{escape(label)}</b>\n\n"
+        f"Status: <b>{escape(state)}</b>\n"
+        f"Name: {escape(details['name'])}\n"
+        f"Tag: <code>{escape(details['tag'])}</code>\n\n"
+        f'<a href="{escape(url)}">View official GitHub release / Lihat rilis</a>\n\n'
+        "Verify your device and kernel compatibility before flashing."
+    )
 
-    if target not in ("auto", "channel", "group"):
-        raise ValueError("COGAN_TELEGRAM_TARGET must be auto, channel or group")
-    if channel_id and not (
-        re.fullmatch(r"@[A-Za-z][A-Za-z0-9_]{4,31}", channel_id)
-        or re.fullmatch(r"-?[0-9]{5,20}", channel_id)
+
+def channel_destination():
+    channel = os.getenv("COGAN_TELEGRAM_CHANNEL_ID", "").strip()
+    if not channel:
+        return None
+    if not (
+        re.fullmatch(r"@[A-Za-z][A-Za-z0-9_]{4,31}", channel)
+        or re.fullmatch(r"-?[0-9]{5,20}", channel)
     ):
         raise ValueError("Channel ID must be a numeric Telegram ID or @public_username")
-    if group_id and not re.fullmatch(r"-?[0-9]{5,20}", group_id):
-        raise ValueError("Group ID must be a numeric Telegram ID")
-    if thread_id and not re.fullmatch(r"[1-9][0-9]*", thread_id):
-        raise ValueError("Group thread ID must be a positive integer")
-
-    if target == "auto":
-        target = "channel" if channel_id else "group"
-    if target == "channel" and channel_id:
-        return [("channel", {"chat_id": channel_id})]
-    if target == "group" and group_id:
-        payload = {"chat_id": group_id}
-        if thread_id:
-            payload["message_thread_id"] = int(thread_id)
-        return [("group", payload)]
-    return []
+    return channel
 
 
-def send(token: str, label: str, payload: dict) -> None:
-    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+def send(token, chat_id, message):
+    payload = json.dumps({
+        "chat_id": chat_id, "parse_mode": "HTML", "text": message,
+        "disable_notification": True, "disable_web_page_preview": True,
+    }, ensure_ascii=False).encode("utf-8")
     req = request.Request(
         f"https://api.telegram.org/bot{token}/sendMessage",
-        data=body,
+        data=payload,
         headers={"Content-Type": "application/json"},
         method="POST",
     )
     try:
         with request.urlopen(req, timeout=API_TIMEOUT) as response:
-            result = json.loads(response.read().decode("utf-8"))
+            data = json.loads(response.read().decode("utf-8"))
     except error.HTTPError as exc:
-        # Do not include the request URL: it contains the bot token.
-        raise RuntimeError(f"Telegram {label} delivery failed (HTTP {exc.code})") from None
+        # Do not echo request URL: the URL includes the Telegram token.
+        raise RuntimeError(f"Telegram delivery failed (HTTP {exc.code})") from None
     except (error.URLError, TimeoutError, ValueError) as exc:
-        # Do not print exception details that might include a sensitive URL.
-        raise RuntimeError(f"Telegram {label} request failed ({type(exc).__name__})") from None
-    if not result.get("ok"):
-        raise RuntimeError(f"Telegram {label} delivery was rejected by the API")
-    print(f"Telegram {label} notification delivered.")
+        raise RuntimeError(f"Telegram request failed ({type(exc).__name__})") from None
+    if not data.get("ok"):
+        raise RuntimeError("Telegram rejected the release notification")
+    print("One quiet Cogan release notification delivered to the channel.")
 
 
-def main(kind: str) -> int:
-    if os.getenv("GITHUB_REPOSITORY") != OFFICIAL_REPO:
-        print("::notice::Telegram skipped: not the official Cogan repository.")
+def main(source):
+    if (os.getenv("GITHUB_REPOSITORY") != OFFICIAL_REPO
+            or os.getenv("GITHUB_REPOSITORY_ID") != OFFICIAL_REPO_ID):
+        print("::notice::Not the official Cogan repository; skipped.")
         return 0
     if os.getenv("COGAN_TELEGRAM_ENABLED", "").strip().lower() != "true":
-        print("::notice::Telegram is disabled until COGAN_TELEGRAM_ENABLED=true.")
+        print("::notice::Release Telegram notifications disabled.")
         return 0
-
+    details = release_details(source)
+    if details is None:
+        return 0
     token = os.getenv("COGAN_TELEGRAM_BOT_TOKEN", "").strip()
-    targets = destinations()
-    if not token or not targets:
-        print("::notice::Telegram skipped: new bot token or channel/group ID not configured.")
+    channel = channel_destination()
+    if not token or not channel:
+        print("::notice::Telegram token or official channel ID missing; skipped.")
         return 0
-
-    text = notification_text(kind)
-    for label, target in targets:
-        send(token, label, {**target, "parse_mode": "HTML", "text": text})
+    send(token, channel, notification_text(details))
     return 0
 
 
 if __name__ == "__main__":
     try:
         if len(sys.argv) != 2:
-            raise ValueError("Usage: telegram_notify.py release|notice")
+            raise ValueError("Usage: telegram_notify.py manual|published")
         sys.exit(main(sys.argv[1]))
-    except (ValueError, RuntimeError) as exc:
-        print(f"::error::{exc}", file=sys.stderr)
+    except (ValueError, RuntimeError, OSError, json.JSONDecodeError) as exc:
+        print(f"::error::{type(exc).__name__}: {exc}", file=sys.stderr)
         sys.exit(1)

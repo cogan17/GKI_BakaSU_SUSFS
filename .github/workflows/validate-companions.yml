@@ -5,6 +5,8 @@ on:
     paths:
       - '.github/workflows/build.yml'
       - '.github/workflows/manual-release.yml'
+      - '.github/workflows/notify-published-release.yml'
+      - '.github/workflows/send_bot_notice.yml'
       - '.github/workflows/validate-companions.yml'
       - 'scripts/companion_artifacts.py'
       - 'scripts/component_sync_gate.py'
