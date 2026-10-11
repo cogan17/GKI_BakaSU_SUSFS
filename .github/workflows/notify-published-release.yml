@@ -1,0 +1,29 @@
+name: Notify Telegram On Published Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cogan-telegram-published-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  announce:
+    # Manual Release From Run already sends its own notification because
+    # releases published using GITHUB_TOKEN do not trigger a new workflow.
+    if: ${{ github.repository == 'cogan17/GKI_BakaSU_SUSFS' && github.event.release.draft == false }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out official release notification code
+        uses: actions/checkout@v4
+      - name: Publish one quiet stable/prerelease announcement
+        continue-on-error: true
+        env:
+          COGAN_TELEGRAM_ENABLED: ${{ vars.COGAN_TELEGRAM_ENABLED }}
+          COGAN_TELEGRAM_BOT_TOKEN: ${{ secrets.COGAN_TELEGRAM_BOT_TOKEN }}
+          COGAN_TELEGRAM_CHANNEL_ID: ${{ secrets.COGAN_TELEGRAM_CHANNEL_ID }}
+        run: python3 scripts/telegram_notify.py published
