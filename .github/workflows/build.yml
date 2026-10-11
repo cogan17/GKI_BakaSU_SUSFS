@@ -111,6 +111,21 @@ jobs:
       CCACHE_HARDLINK: "true"
 
     steps:
+      # This restricts the OFFICIAL workflow only; a fork can remove a public
+      # workflow guard. Exclusive verification requires a separate private service.
+      - name: Verify official Cogan repository identity
+        env:
+          REPOSITORY: ${{ github.repository }}
+          REPOSITORY_ID: ${{ github.repository_id }}
+          OWNER_ID: ${{ github.repository_owner_id }}
+        run: |
+          if [[ "$REPOSITORY" != "cogan17/GKI_BakaSU_SUSFS" ||
+                "$REPOSITORY_ID" != "1397614374" ||
+                "$OWNER_ID" != "79615344" ]]; then
+            echo "::error title=Official Cogan workflow only::This published workflow is reserved for the original Cogan repository; forks cannot run the official build path."
+            exit 1
+          fi
+
       # ==================== Build configuration summary ====================
       # Print all current build settings for debugging and tracking
       - name: Build configuration summary
