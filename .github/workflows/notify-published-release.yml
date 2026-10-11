@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Check out official release notification code
         uses: actions/checkout@v4
+        with:
+          ref: main
       - name: Publish one quiet stable/prerelease announcement
         continue-on-error: true
         env:
