@@ -57,7 +57,7 @@ def destinations():
     channel_id = os.getenv("COGAN_TELEGRAM_CHANNEL_ID", "").strip()
     group_id = os.getenv("COGAN_TELEGRAM_GROUP_ID", "").strip()
     thread_id = os.getenv("COGAN_TELEGRAM_GROUP_THREAD_ID", "").strip()
-    target = os.getenv("COGAN_TELEGRAM_TARGET", "auto").strip().lower()
+    target = (os.getenv("COGAN_TELEGRAM_TARGET") or "").strip().lower() or "auto"
 
     if target not in ("auto", "channel", "group"):
         raise ValueError("COGAN_TELEGRAM_TARGET must be auto, channel or group")

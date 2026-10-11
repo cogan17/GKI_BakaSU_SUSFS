@@ -12,6 +12,8 @@ on:
       - 'scripts/package_nomount.sh'
       - 'scripts/prepare_bundle_release.py'
       - 'tests/test_companion_artifacts.py'
+      - 'scripts/telegram_notify.py'
+      - 'tests/test_telegram_notify.py'
   workflow_dispatch:
 
 permissions:
@@ -74,5 +76,7 @@ jobs:
           assert 'Internal Cogan triage ONLY' in sample('verify_bundle')
           print('Component failure notice smoke tests passed')
           PY
+      - name: Test Telegram notification routing
+        run: python3 -m unittest discover -s tests -p 'test_telegram_notify.py' -v
       - name: Check NoMount packaging shell syntax
         run: bash -n scripts/package_nomount.sh
