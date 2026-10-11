@@ -225,6 +225,7 @@ enum { NM_CMD_UNSPEC, NM_CMD_GET_VERSION, NM_CMD_ADD_RULE, };
             "https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/runs/123",
             self.meta, "prebuild", "c" * 40, "b" * 40)
         self.assertIn("Penyebab:", rendered)
+        self.assertIn("**[Open failed workflow logs](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/runs/123)**", rendered)
         report = rendered.split("```text", 1)[1].split("```", 1)[0]
         self.assertIn("BakaSU upstream explicitly blocks compilation", report)
         self.assertNotIn("memblokir", report)
