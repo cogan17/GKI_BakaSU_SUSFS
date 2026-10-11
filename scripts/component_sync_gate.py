@@ -262,7 +262,7 @@ ENGLISH_REASONS = {
     "Paket NoMount untuk kernel ini tidak tersedia.": "The NoMount metamodule ZIP for this kernel is unavailable.",
     "Paket NoMount tidak cocok dengan driver dalam kernel.": "The packaged NoMount metamodule does not match the kernel driver.",
     "Commit NoMount tercatat meskipun fitur tidak diminta.": "A NoMount source commit is present even though NoMount was disabled.",
-    "NoMount aktif di Image meski tidak diminta.": "NoMount is enabled in the compiled Image although it was not requested.",
+    "NoMount aktif di Image meskipun tidak diminta.": "NoMount is enabled in the compiled Image although it was not requested.",
 }
 DYNAMIC_ENGLISH_REASONS = (
     (re.compile(r"Manager (normal|spoofed) tidak sama dengan versi driver (\d+)\."), lambda m: f"The {m[1]} manager version does not match kernel driver version {m[2]}."),
