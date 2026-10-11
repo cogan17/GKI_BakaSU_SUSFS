@@ -10,6 +10,19 @@
 
 **快速入口：** [Actions](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions) · [自定义构建](.github/workflows/kernel-custom.yml) · [主构建工作流](.github/workflows/main.yml) · [手动发布](.github/workflows/manual-release.yml) · [Releases](https://github.com/cogan17/GKI_BakaSU_SUSFS/releases)
 
+## Cogan 内核的优势
+
+Cogan 注重**可追溯的构建与多层兼容性检查**，而不只是成功编译内核。这些措施属于工作流保护，**不能保证完全避免 bootloop、kernel panic 或设备变砖**。
+
+- **构建前兼容性检查：**核对 Android GKI/KMI 组合、固定的源码提交、内核配置以及上游兼容性保护；发现不匹配时停止构建（*fail closed*）。
+- **配套的 BakaSU 管理器与内核：**从与内核驱动**相同 BakaSU 提交**的官方构建获取 normal 和 spoofed 管理器 APK，并检查版本信息、内核接受的签名证书及 arm64 `ksud`。
+- **固定 NoMount 来源：**内核驱动与 metamodule/userspace 使用同一选定的 NoMount 提交，并检查软件包与源码身份。
+- **可追溯的构建产物：**提供 AnyKernel3 刷入 ZIP、配套 APK、按需提供 NoMount metamodule，以及记录提交、来源、版本和校验和的 `*-bundle.json`；仅在构建和检查成功后提供相关文件。
+- **发布保护：**Manual Release From Run 在发布前检查文件完整性和齐全性，不会暗中混用不同版本的组件。
+- **便于排查的失败报告：**GitHub Actions Summary 提供检查结果、技术证据和多语言报告，方便定位问题并与上游开发者沟通。
+
+**SUSFS 状态：**只要 BakaSU 上游仍禁止当前 SUSFS 组合，兼容性检查便会终止构建。不要为了生成 ZIP 而绕过这一保护。CI 通过也不能替代真机测试和可靠的恢复方案。
+
 ## 项目说明
 
 本仓库通过 GitHub Actions 构建 Android GKI 内核，以 **BakaSU + SUSFS** 为基础，并提供 NoMount、ZRAM、BBG、Re-Kernel 等可选功能。成功构建后可下载 **AnyKernel3 ZIP**；`clean_build` 用于不集成 BakaSU、SUSFS 和可选补丁的构建。
@@ -111,15 +124,6 @@ Droidspaces 补丁具有实验性，不同设备和内核版本可能需要尝�
 
 [更新 GKI 版本数据](.github/workflows/update-gki-data.yml)工作流每周一 UTC 08:00 自动运行，也可以手动触发。工作流会运行同步测试、更新 JSON、验证构建矩阵，并提交数据变更。
 
-## 致谢
-
-- **原项目、主要开发者：** [coolzyd9107 / GKI_BakaSU_SUSFS](https://github.com/coolzyd9107/GKI_BakaSU_SUSFS)。
-- **本派生仓库的维护及修改：** [Cogan（cogan17）](https://github.com/cogan17)。
-- **项目历史与贡献者：** [zzh20188](https://github.com/zzh20188)、[zhuzhuzihan](https://github.com/zhuzhuzihan)、[TanakaLun](https://github.com/TanakaLun)、[luyancib](https://github.com/luyancib)、[AlexLiuDev233](https://github.com/AlexLiuDev233)、[cctv18](https://github.com/cctv18)。
-- 感谢 **BakaSU、KernelSU、SUSFS、NoMount、Re-Kernel、AnyKernel3** 与 Android GKI 的开发者及贡献者。
-
-本仓库采用 **GPL-2.0** 许可证。[上游 Telegram 频道](https://t.me/BakaSUKernelBuilds) 属于原项目社区资源，并非 Cogan 分支专用支持频道。
-
 ## 配套管理器、内核与 NoMount
 
 BakaSU 构建会提供官方普通版和 spoofed 版管理器 APK、AnyKernel3 内核 ZIP，
@@ -135,3 +139,12 @@ NoMount 驱动和用户空间/元模块使用同一个固定的 `dev` 提交。�
 `*-bundle.json` 记录源码提交、版本、APK 来源和校验值。
 **Manual Release From Run** 校验完整性后发布指定运行中的原始配套文件，支持多个
 内核；旧运行仍可发布内核，但会明确标注缺少配套管理器和元模块。
+
+## 致谢
+
+- **原项目、主要开发者：** [coolzyd9107 / GKI_BakaSU_SUSFS](https://github.com/coolzyd9107/GKI_BakaSU_SUSFS)。
+- **本派生仓库的维护及修改：** [Cogan（cogan17）](https://github.com/cogan17)。
+- **项目历史与贡献者：** [zzh20188](https://github.com/zzh20188)、[zhuzhuzihan](https://github.com/zhuzhuzihan)、[TanakaLun](https://github.com/TanakaLun)、[luyancib](https://github.com/luyancib)、[AlexLiuDev233](https://github.com/AlexLiuDev233)、[cctv18](https://github.com/cctv18)。
+- 感谢 **BakaSU、KernelSU、SUSFS、NoMount、Re-Kernel、AnyKernel3** 与 Android GKI 的开发者及贡献者。
+
+本仓库采用 **GPL-2.0** 许可证。[上游 Telegram 频道](https://t.me/BakaSUKernelBuilds) 属于原项目社区资源，并非 Cogan 分支专用支持频道。
