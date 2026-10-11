@@ -7,7 +7,7 @@ on:
       - '.github/workflows/manual-release.yml'
       - '.github/workflows/validate-companions.yml'
       - 'scripts/companion_artifacts.py'
-      - 'scripts/upstream_compat_notice.py'
+      - 'scripts/component_sync_gate.py'
       - 'scripts/component_failure_notice.py'
       - 'scripts/package_nomount.sh'
       - 'scripts/prepare_bundle_release.py'
@@ -27,25 +27,9 @@ jobs:
           python-version: '3.12'
       - name: Test source pairing and release completeness
         run: python3 -m unittest discover -s tests -p 'test_companion_artifacts.py' -v
-      - name: Validate upstream report generator
-        run: |
-          python3 -m py_compile scripts/upstream_compat_notice.py
-          python3 - <<'PY'
-          import sys
-          sys.path.insert(0, "scripts")
-          from upstream_compat_notice import BuildContext, render_report
-          ctx = BuildContext("cogan17/GKI_BakaSU_SUSFS",
-                             "https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/runs/123",
-                             "android14-6.1.177-lts-r9", "a" * 40, "35224",
-                             "gki-android14-6.1", "b" * 40)
-          body = render_report(ctx)
-          assert "Bahasa Indonesia" in body
-          assert "Copy bug report — BakaSU developers" in body
-          assert "Copy bug report — SUSFS (simonpunk)" in body
-          assert "I am not assuming" in body
-          assert body.count("actions/runs/123") == 3
-          print("Upstream bilingual report smoke test passed")
-          PY
+      - name: Validate cross-component synchronization gate
+        run: python3 -m py_compile scripts/component_sync_gate.py
+
       - name: Verify component failure notices
         run: |
           python3 -m py_compile scripts/component_failure_notice.py

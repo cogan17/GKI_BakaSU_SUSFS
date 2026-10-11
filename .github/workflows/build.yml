@@ -683,36 +683,6 @@ jobs:
             --directory "$RUNNER_TEMP/cogan-companions" \
             --source "$KERNEL_ROOT/KernelSU"
 
-      # Do not bypass upstream's deliberate SUSFS compile-time guard. Detect the
-      # currently unconditional failure immediately after pinning BakaSU, rather
-      # than spending 10+ minutes compiling a kernel that cannot succeed.
-      - name: Preflight BakaSU and SUSFS upstream compatibility
-        id: preflight_bakasu_susfs
-        if: inputs.clean_build != true && inputs.enable_susfs && inputs.ksu_variant == 'BakaSU'
-        shell: bash
-        run: |
-          set -euo pipefail
-          source_dir="$KERNEL_ROOT/KernelSU"
-          guard="$source_dir/kernel/tools/susfs_compat.mk"
-          kbuild="$source_dir/kernel/Kbuild"
-          test -f "$kbuild" || { echo "::error::BakaSU kernel Kbuild is missing"; exit 1; }
-          test -f "$guard" || { echo "::error::BakaSU SUSFS compatibility file is missing"; exit 1; }
-          if grep -Fq 'include $(KSU_SRC)/tools/susfs_compat.mk' "$kbuild"; then
-            last_directive="$(awk 'NF && $1 !~ /^#/ { last=$0 } END { print last }' "$guard")"
-            if [[ "$last_directive" == '$(error Please wait susfs update.)' ]]; then
-              source_sha="$(git -C "$source_dir" rev-parse HEAD)"
-              export SUSFS_EXPECTED_BRANCH="gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}"
-              python3 scripts/upstream_compat_notice.py \
-                --bakasu-source "$source_dir" \
-                --susfs-source "$SUSFS4KSU" \
-                --metadata "$RUNNER_TEMP/cogan-companions/sources.json" \
-                --summary "$GITHUB_STEP_SUMMARY"
-              echo "::error title=BakaSU/SUSFS upstream incompatibility::Source $source_sha blocks SUSFS compilation. Reports for both upstream developers are in the Actions Summary."
-              exit 1
-            fi
-          fi
-          echo "No unconditional upstream BakaSU SUSFS build block detected; kernel compilation remains the final compatibility check."
-
       # ==================== Apply SUSFS patches ====================
       # SUSFS (Super User SUS FileSystem) hides traces of root
       - name: Apply SUSFS patches
@@ -1520,6 +1490,27 @@ jobs:
           CONFIG_KSU_SUSFS_SUS_MAP=y
           EOF
 
+      # Verify source commits, manager identity, SUSFS, NoMount build hooks
+      # and userspace/kernel ABI. On success the Summary remains unchanged.
+      - name: Verify component synchronization before compilation
+        id: verify_source_sync
+        if: inputs.clean_build != true
+        shell: bash
+        env:
+          USE_SUSFS: ${{ inputs.enable_susfs }}
+          USE_NOMOUNT: ${{ inputs.use_nomount }}
+        run: |
+          set -euo pipefail
+          python3 scripts/component_sync_gate.py \
+            --stage prebuild \
+            --metadata "$RUNNER_TEMP/cogan-companions/sources.json" \
+            --bakasu "$KERNEL_ROOT/KernelSU" \
+            --kernel "$KERNEL_ROOT/common" \
+            --susfs "$SUSFS4KSU" \
+            --config "$DEFCONFIG" \
+            --use-susfs "$USE_SUSFS" \
+            --use-nomount "$USE_NOMOUNT"
+
       # ==================== Configure kernel name ====================
       - name: Configure kernel name
         id: configure_kernel_name
@@ -1853,14 +1844,35 @@ jobs:
           bash scripts/package_nomount.sh "$KERNEL_ROOT/common/NoMount" \
             "$NOMOUNT_COMMIT" "$GITHUB_WORKSPACE/companion-files" "$CONFIG-$BUILD_VARIANT"
 
+      # Inspect the compiled Image and matched NoMount metamodule.
+      - name: Verify matched components in compiled kernel
+        id: verify_compiled_sync
+        if: inputs.clean_build != true
+        shell: bash
+        env:
+          USE_SUSFS: ${{ inputs.enable_susfs }}
+          USE_NOMOUNT: ${{ inputs.use_nomount }}
+        run: |
+          set -euo pipefail
+          bash "$KERNEL_ROOT/common/scripts/extract-ikconfig" \
+            "$ANYKERNEL3/Image" > "$RUNNER_TEMP/cogan-bundle.config"
+          python3 scripts/component_sync_gate.py \
+            --stage prepublish \
+            --metadata "$RUNNER_TEMP/cogan-companions/sources.json" \
+            --bakasu "$KERNEL_ROOT/KernelSU" \
+            --kernel "$KERNEL_ROOT/common" \
+            --susfs "$SUSFS4KSU" \
+            --config "$RUNNER_TEMP/cogan-bundle.config" \
+            --nomount-module "${NOMOUNT_MODULE:-}" \
+            --use-susfs "$USE_SUSFS" \
+            --use-nomount "$USE_NOMOUNT"
+
       - name: Verify and record complete bundle
         id: verify_bundle
         if: inputs.clean_build != true
         run: |
           set -euo pipefail
-          # Source flags alone are insufficient: inspect the actual packaged Image.
-          bash "$KERNEL_ROOT/common/scripts/extract-ikconfig" "$ANYKERNEL3/Image" \
-            > "$RUNNER_TEMP/cogan-bundle.config"
+          # Reuse the verified compiled Image configuration from previous step.
           python3 scripts/companion_artifacts.py finalize \
             --directory "$RUNNER_TEMP/cogan-companions" \
             --destination companion-files --prefix "$CONFIG-$BUILD_VARIANT" \

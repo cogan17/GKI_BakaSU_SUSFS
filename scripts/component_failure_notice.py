@@ -184,8 +184,9 @@ def main():
         # Upstream's confirmed unconditional BakaSU/SUSFS guard already generated
         # more precise two-upstream reports. Avoid duplicate/contradictory drafts.
         previous = summary_path.read_text(encoding="utf-8")
-        if "Copy bug report — BakaSU developers" in previous:
-            print("Precise upstream BakaSU/SUSFS reports are already present.")
+        if ("COGAN_VERIFIED_COMPAT_FAILURE" in previous
+                or "Copy bug report — BakaSU developers" in previous):
+            print("A precise compatibility failure report already exists; skipping generic duplicate.")
             return
 
     repository = sanitize(os.environ.get("GITHUB_REPOSITORY", "unknown/repository"))
