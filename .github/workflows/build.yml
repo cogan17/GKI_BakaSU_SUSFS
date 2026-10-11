@@ -1812,6 +1812,7 @@ jobs:
         if: inputs.clean_build != true
         uses: actions/upload-artifact@v7
         with:
+          name: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-BakaSU-normal
           path: companion-files/*-normal.apk
           archive: false
           if-no-files-found: error
@@ -1820,6 +1821,7 @@ jobs:
         if: inputs.clean_build != true
         uses: actions/upload-artifact@v7
         with:
+          name: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-BakaSU-spoofed
           path: companion-files/*-spoofed.apk
           archive: false
           if-no-files-found: error
@@ -1828,6 +1830,7 @@ jobs:
         if: inputs.clean_build != true && inputs.use_nomount
         uses: actions/upload-artifact@v7
         with:
+          name: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-NoMount
           path: companion-files/*-NoMount-*.zip
           archive: false
           if-no-files-found: error
@@ -1836,6 +1839,7 @@ jobs:
         if: inputs.clean_build != true
         uses: actions/upload-artifact@v7
         with:
+          name: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-bundle-manifest
           path: companion-files/*-bundle.json
           archive: false
           if-no-files-found: error
@@ -1934,6 +1938,7 @@ jobs:
         id: upload_ready_to_flash_zip
         uses: actions/upload-artifact@v7
         with:
+          name: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-AnyKernel3
           path: ${{ env.CONFIG }}-${{ env.BUILD_VARIANT }}-AnyKernel3.zip
           if-no-files-found: error
           archive: false
