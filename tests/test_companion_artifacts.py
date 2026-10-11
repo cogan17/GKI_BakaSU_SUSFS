@@ -215,6 +215,42 @@ enum { NM_CMD_UNSPEC, NM_CMD_GET_VERSION, NM_CMD_ADD_RULE, };
         self.assertEqual(sync.render([], "r9", "https://github.com/x/y/actions/runs/1",
                                      self.meta, "prebuild", "c" * 40, "b" * 40), "")
 
+    def test_developer_report_is_english_owner_notice_stays_indonesian(self):
+        issue = sync.Issue(
+            "BakaSU", "BakaSU upstream memblokir SUSFS secara eksplisit.",
+            "BakaSU/kernel/tools/susfs_compat.mk: Please wait susfs update.",
+            True)
+        rendered = sync.render(
+            [issue], "android14-6.1.177-lts-r9",
+            "https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/runs/123",
+            self.meta, "prebuild", "c" * 40, "b" * 40)
+        self.assertIn("Penyebab:", rendered)
+        report = rendered.split("```text", 1)[1].split("```", 1)[0]
+        self.assertIn("BakaSU upstream explicitly blocks compilation", report)
+        self.assertNotIn("memblokir", report)
+        self.assertNotIn("tidak sinkron", report)
+        self.assertNotIn("Penyebab", report)
+
+    def test_every_detected_reason_has_english_translation(self):
+        # Translation coverage includes all issue reasons created by the gate,
+        # including the dynamic manager version/signature reasons.
+        import ast
+        source = (Path(__file__).resolve().parents[1] / "scripts" /
+                  "component_sync_gate.py").read_text()
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
+                continue
+            if node.func.id != "add" or len(node.args) < 3:
+                continue
+            reason = node.args[2]
+            if isinstance(reason, ast.Constant) and isinstance(reason.value, str):
+                self.assertTrue(sync.english_reason(reason.value))
+        self.assertIn("normal manager version", sync.english_reason(
+            "Manager normal tidak sama dengan versi driver 35224."))
+        self.assertIn("spoofed manager signing certificate", sync.english_reason(
+            "Sertifikat manager spoofed tidak terverifikasi."))
+
     def test_manager_version_mismatch_reports_only_bakasu(self):
         self.meta["managers"]["normal"]["version_code"] = 35223
         self.assertEqual({issue.part for issue in self.check()}, {"BakaSU"})
