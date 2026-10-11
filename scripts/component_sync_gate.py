@@ -128,9 +128,16 @@ def check_sources(*, meta, bakasu, kernel, susfs, use_susfs, use_nomount, config
         add(issues, "Kernel", "Konfigurasi kernel tidak mengaktifkan BakaSU Manager bawaan.",
             "CONFIG_KSU=y; CONFIG_KSU_DISABLE_MANAGER must be disabled")
     if use_susfs:
-        if not git(susfs, "rev-parse", "HEAD"):
+        susfs_head = git(susfs, "rev-parse", "HEAD")
+        if not re.fullmatch(r"[0-9a-f]{40}", susfs_head):
             add(issues, "SUSFS", "Sumber SUSFS tidak tersedia/terverifikasi.",
                 "susfs4ksu checkout")
+        elif stage == "prepublish" and meta.get("susfs_commit") != susfs_head:
+            add(issues, "SUSFS", "Commit SUSFS berubah antara kompilasi dan publikasi.",
+                f"sources.json:susfs_commit versus susfs checkout ({susfs_head})")
+        elif stage == "prebuild" and meta.get("susfs_commit") not in (None, susfs_head):
+            add(issues, "SUSFS", "Sumber SUSFS tidak sama dengan commit tercatat.",
+                "sources.json:susfs_commit versus susfs checkout")
         if "CONFIG_KSU_SUSFS=y" not in flags:
             add(issues, "Kernel", "SUSFS diaktifkan pada workflow tetapi tidak di konfigurasi kernel.",
                 "CONFIG_KSU_SUSFS=y missing")
@@ -288,6 +295,14 @@ def main():
         use_nomount=args.use_nomount == "true", config=args.config,
         stage=args.stage, module=args.nomount_module)
     if not issues:
+        # Freeze the exact SUSFS source used when building; the publishing gate
+        # compares this pin with the original checkout. BakaSU/NoMount already
+        # have their own commit pins from the manager/artifact resolver.
+        if args.stage == "prebuild" and args.use_susfs == "true":
+            susfs_commit = git(args.susfs, "rev-parse", "HEAD")
+            if re.fullmatch(r"[0-9a-f]{40}", susfs_commit):
+                meta["susfs_commit"] = susfs_commit
+                args.metadata.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
         # Successful compatibility checks are intentionally silent.
         return
     server = os.environ.get("GITHUB_SERVER_URL", "https://github.com").rstrip("/")
