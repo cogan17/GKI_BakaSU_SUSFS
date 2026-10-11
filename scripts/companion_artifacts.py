@@ -190,8 +190,18 @@ def finalize(args):
     if metadata["nomount_commit"]:
         module = Path(args.module)
         with zipfile.ZipFile(module) as archive:
+            required = {"NOMOUNT_SOURCE_COMMIT", "module.prop", "customize.sh", "metamount.sh", "bin/nm-arm64"}
+            if not required.issubset(archive.namelist()) or archive.testzip():
+                raise ValueError("NoMount metamodule incomplete or corrupt")
             if archive.read("NOMOUNT_SOURCE_COMMIT").decode().strip() != metadata["nomount_commit"]:
                 raise ValueError("NoMount module/kernel commit mismatch")
+            props = dict(line.split("=", 1) for line in archive.read("module.prop").decode().splitlines() if "=" in line)
+            version_code = props.get("versionCode", "")
+            if not version_code.isdecimal() or int(version_code) < 1:
+                raise ValueError("NoMount module versionCode invalid")
+            if f"Cogan built-in {version_code}-{metadata['nomount_commit'][:8]}" not in props.get("version", ""):
+                raise ValueError("NoMount source stamp/version mismatch")
+            metadata["nomount_version_code"] = int(version_code)
         files["nomount"] = {"name": module.name, "sha256": sha256(module)}
     metadata.update(files=files, source_run_id=os.environ["GITHUB_RUN_ID"],
                     workflow_commit=os.environ["GITHUB_SHA"],
