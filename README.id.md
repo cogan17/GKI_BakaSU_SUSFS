@@ -119,3 +119,23 @@ Workflow [Perbarui Data Versi GKI](.github/workflows/update-gki-data.yml) berjal
 - Terima kasih kepada pengembang dan kontributor **BakaSU, KernelSU, SUSFS, NoMount, Re-Kernel, AnyKernel3**, dan Android GKI.
 
 Repository ini menggunakan lisensi **GPL-2.0**. [Kanal Telegram upstream](https://t.me/BakaSUKernelBuilds) merupakan sumber komunitas asli, bukan kanal dukungan khusus fork Cogan.
+
+## Paket manager, kernel, dan NoMount yang sesuai
+
+Build BakaSU menghasilkan APK manager **normal** dan **spoofed** resmi, ZIP kernel
+AnyKernel3, serta ZIP metamodule NoMount jika `use_nomount` aktif. APK tidak
+dibangun ulang atau ditandatangani ulang: keduanya diambil dari hasil akhir
+`Build Manager` resmi pada **commit yang sama** dengan driver kernel. Versi APK,
+sertifikat resmi yang diterima kernel, dan keberadaan `ksud` arm64 diperiksa.
+
+NoMount driver dan userspace/metamodule memakai satu commit `dev` yang dikunci
+saat build. Paket NoMount ini khusus **built-in** (`CONFIG_NOMOUNT=y`), tanpa LKM.
+Pilih satu APK, flash kernel dan reboot, lalu pasang metamodule melalui BakaSU
+dan reboot lagi. Pemeriksaan build belum membuktikan fungsi di perangkat.
+
+Jika kedua APK resmi untuk commit yang diminta belum tersedia atau kedaluwarsa,
+build berhenti sebelum kompilasi; tidak beralih diam-diam ke versi lain.
+`*-bundle.json` merekam commit, versi, sumber APK, dan checksum tiap file.
+**Manual Release From Run** menerbitkan file asli dari run tersebut setelah
+memeriksa kelengkapan dan checksum, termasuk untuk beberapa kernel sekaligus.
+Run lama tetap dapat dirilis sebagai kernel saja, dengan keterangan yang jelas.

@@ -119,3 +119,23 @@ The [Update GKI Version Data](.github/workflows/update-gki-data.yml) workflow ru
 - Thanks to the developers and contributors of **BakaSU, KernelSU, SUSFS, NoMount, Re-Kernel, AnyKernel3**, and Android GKI.
 
 This repository is licensed under **GPL-2.0**. The [upstream Telegram channel](https://t.me/BakaSUKernelBuilds) is an upstream community resource, not a dedicated Cogan support channel.
+
+## Matched manager, kernel, and NoMount bundles
+
+BakaSU builds include official **normal** and **spoofed** manager APKs, the
+AnyKernel3 kernel ZIP, and a NoMount metamodule ZIP when `use_nomount` is enabled.
+Both APKs are fetched unchanged from the final official `Build Manager` artifacts
+for the **same commit** as the kernel driver. The build checks version codes,
+the official certificate accepted by the kernel, and the bundled arm64 `ksud`.
+
+NoMount kernel and userspace/metamodule sources share one pinned `dev` commit.
+This module targets **built-in** NoMount (`CONFIG_NOMOUNT=y`), without an LKM.
+Install one manager APK, flash the kernel and reboot, then install NoMount through
+BakaSU and reboot again. Build checks do not replace device testing.
+
+If a same-commit official APK pair is unavailable or expired, the build stops
+before compilation instead of silently using another version. A `*-bundle.json`
+records source commits, versions, APK provenance, and file checksums.
+**Manual Release From Run** verifies and publishes the original complete bundles
+from that run, including multiple kernels. Older runs retain explicitly labelled
+kernel-only release support.
