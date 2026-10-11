@@ -103,3 +103,14 @@ jobs:
         run: |
           echo "### Kernel + BakaSU managers + NoMount (when enabled)" >> "$GITHUB_STEP_SUMMARY"
           echo "[Download from Releases]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/BakaSU-run-${{ inputs.source_run_id }})" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify Cogan Telegram destinations after release
+        env:
+          COGAN_TELEGRAM_ENABLED: ${{ vars.COGAN_TELEGRAM_ENABLED }}
+          COGAN_TELEGRAM_BOT_TOKEN: ${{ secrets.COGAN_TELEGRAM_BOT_TOKEN }}
+          COGAN_TELEGRAM_CHANNEL_ID: ${{ secrets.COGAN_TELEGRAM_CHANNEL_ID }}
+          COGAN_TELEGRAM_GROUP_ID: ${{ secrets.COGAN_TELEGRAM_GROUP_ID }}
+          COGAN_TELEGRAM_GROUP_THREAD_ID: ${{ secrets.COGAN_TELEGRAM_GROUP_THREAD_ID }}
+          COGAN_RELEASE_RUN_ID: ${{ inputs.source_run_id }}
+          COGAN_RELEASE_TYPE: ${{ inputs.release_type }}
+        run: python3 scripts/telegram_notify.py release
