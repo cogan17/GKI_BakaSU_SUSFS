@@ -251,11 +251,37 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      # Disk cleanup removes the preinstalled SDK; /usr/local/lib/android is
+      # owned by root on ubuntu-latest. Install the verification tools into
+      # a runner-owned directory instead of restoring the inaccessible path.
+      - name: Prepare writable Android SDK for APK verification
+        if: inputs.clean_build != true
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_dir="$RUNNER_TEMP/cogan-android-sdk"
+          mkdir -p "$sdk_dir"
+          echo "ANDROID_SDK_ROOT=$sdk_dir" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$sdk_dir" >> "$GITHUB_ENV"
+
       - name: Set up Android APK verification tools
         if: inputs.clean_build != true
         uses: android-actions/setup-android@v3
         with:
           packages: 'build-tools;36.0.0'
+
+      - name: Verify APK tools are ready
+        if: inputs.clean_build != true
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_dir="${ANDROID_SDK_ROOT:?Android SDK root not set}"
+          for tool in aapt apksigner; do
+            if [ ! -x "$sdk_dir/build-tools/36.0.0/$tool" ]; then
+              echo "::error::Missing Android APK verification tool: $tool"
+              exit 1
+            fi
+          done
 
       # ==================== Show configuration file content ====================
       - name: Show configuration information
