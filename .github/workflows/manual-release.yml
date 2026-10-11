@@ -23,6 +23,19 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      - name: Verify official Cogan release repository
+        env:
+          REPOSITORY: ${{ github.repository }}
+          REPOSITORY_ID: ${{ github.repository_id }}
+          OWNER_ID: ${{ github.repository_owner_id }}
+        run: |
+          if [[ "$REPOSITORY" != "cogan17/GKI_BakaSU_SUSFS" ||
+                "$REPOSITORY_ID" != "1397614374" ||
+                "$OWNER_ID" != "79615344" ]]; then
+            echo "::error title=Official Cogan releases only::Forks cannot publish through the official release workflow."
+            exit 1
+          fi
+
       - name: Check out release verification scripts
         uses: actions/checkout@v6
 
