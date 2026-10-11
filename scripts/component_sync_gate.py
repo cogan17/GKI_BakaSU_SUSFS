@@ -309,8 +309,8 @@ def render(issues, build, run_url, meta, stage, susfs_sha, nomount_sha):
             out.append("**Kirim:** laporan ini untuk pemeriksaan internal Cogan; jangan kirim ke upstream sebelum penyebab terkonfirmasi.")
         out.append("")
         observations = "\n".join(f"- {safe(english_reason(x.reason))} | Evidence: {safe(x.evidence)}" for x in problems)
-        en = (f"Title: Build compatibility inquiry — {safe(part)} ({safe(build)})\n\n"
-              "Hello maintainers,\n\n"
+        issue_title = f"Build compatibility inquiry — {safe(part)} ({safe(build)})"
+        issue_description = ("Hello maintainers,\n\n"
               "I maintain the Cogan kernel build repository. The validation gate found "
               "the following objective mismatches:\n\n"
               f"{observations}\n\n"
@@ -321,7 +321,12 @@ def render(issues, build, run_url, meta, stage, susfs_sha, nomount_sha):
               "The workflow does not bypass any kernel compatibility checks. Thank you.")
         out.extend(["<details>", f"<summary>English — Copy report: {safe(part)}</summary>", "",
                     f"**Workflow:** [{run_url}]({run_url}) — click the URL to open the failed build logs.",
-                    "", f"{FENCE}text", en, FENCE, "", "</details>", ""])
+                    "",
+                    "**Issue Title — copy separately into GitHub Title:**", "",
+                    f"{FENCE}text", issue_title, FENCE, "",
+                    "**Issue Description — copy separately into GitHub Description:**", "",
+                    f"{FENCE}text", issue_description, FENCE, "",
+                    "</details>", ""])
     return "\n".join(out) + "\n"
 
 
