@@ -176,6 +176,7 @@ Thank you."""
     return (intro + destination + "\n\n"
             "<details>\n"
             f"<summary>{heading}</summary>\n\n"
+            f"**[Open failed workflow logs]({run_url})** — clickable link.\n\n"
             "Salin seluruh laporan berikut (termasuk judulnya):\n\n"
             f"{FENCE}text\n{english}\n{FENCE}\n\n"
             "</details>\n\n")
