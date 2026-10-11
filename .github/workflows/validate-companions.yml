@@ -11,6 +11,8 @@ on:
       - 'scripts/component_failure_notice.py'
       - 'scripts/package_nomount.sh'
       - 'scripts/prepare_bundle_release.py'
+      - 'scripts/flash_safety_gate.py'
+      - 'tests/test_flash_safety.py'
       - 'tests/test_companion_artifacts.py'
   workflow_dispatch:
 
@@ -74,5 +76,10 @@ jobs:
           assert 'Internal Cogan triage ONLY' in sample('verify_bundle')
           print('Component failure notice smoke tests passed')
           PY
+      - name: Test Cogan pre-flash KMI, target and ZIP safety gates
+        run: |
+          python3 -m py_compile scripts/flash_safety_gate.py
+          python3 -m unittest discover -s tests -p 'test_flash_safety.py' -v
+
       - name: Check NoMount packaging shell syntax
         run: bash -n scripts/package_nomount.sh
