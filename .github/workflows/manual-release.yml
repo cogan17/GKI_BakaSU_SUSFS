@@ -107,6 +107,7 @@ jobs:
       - name: Notify Cogan Telegram destinations after release
         env:
           COGAN_TELEGRAM_ENABLED: ${{ vars.COGAN_TELEGRAM_ENABLED }}
+          COGAN_TELEGRAM_TARGET: ${{ vars.COGAN_TELEGRAM_TARGET }}
           COGAN_TELEGRAM_BOT_TOKEN: ${{ secrets.COGAN_TELEGRAM_BOT_TOKEN }}
           COGAN_TELEGRAM_CHANNEL_ID: ${{ secrets.COGAN_TELEGRAM_CHANNEL_ID }}
           COGAN_TELEGRAM_GROUP_ID: ${{ secrets.COGAN_TELEGRAM_GROUP_ID }}
