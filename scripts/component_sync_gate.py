@@ -255,7 +255,11 @@ def render(issues, build, run_url, meta, stage, susfs_sha, nomount_sha):
         out.append("")
         direct = any(x.upstream for x in problems)
         target = f"[{part}]({DESTINATIONS[part]})" if direct and part in DESTINATIONS else "integrasi Cogan terlebih dahulu"
-        out.append(f"**Pemeriksaan berikutnya:** {target}.")
+        out.append(f"**Tujuan laporan:** {target}.")
+        if direct and part in DESTINATIONS:
+            out.append("**Kirim:** salin laporan Inggris di bawah ke halaman pengembang tersebut.")
+        else:
+            out.append("**Kirim:** laporan ini untuk pemeriksaan internal Cogan; jangan kirim ke upstream sebelum penyebab terkonfirmasi.")
         out.append("")
         observations = "\n".join(f"- {safe(x.reason)} | Evidence: {safe(x.evidence)}" for x in problems)
         en = (f"Title: Build compatibility inquiry — {safe(part)} ({safe(build)})\n\n"

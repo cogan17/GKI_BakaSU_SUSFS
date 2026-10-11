@@ -66,6 +66,12 @@ jobs:
           assert 'BakaSU' in sample('verify_manager_driver')
           assert 'belum dapat ditentukan' in sample('verify_bundle')
           assert m.failing_steps({'apply_nomount': {'outcome': 'success'}}) == []
+          assert m.failing_steps({'verify_source_sync': {'outcome': 'failure'}}) == []
+          assert m.failing_steps({'verify_compiled_sync': {'outcome': 'failure'}}) == []
+          assert 'verify_bundle' in [x[0] for x in m.failing_steps({
+              'verify_source_sync': {'outcome': 'failure'},
+              'verify_bundle': {'outcome': 'failure'}})]
+          assert 'Internal Cogan triage ONLY' in sample('verify_bundle')
           print('Component failure notice smoke tests passed')
           PY
       - name: Check NoMount packaging shell syntax
