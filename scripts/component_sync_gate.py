@@ -320,7 +320,7 @@ def render(issues, build, run_url, meta, stage, susfs_sha, nomount_sha):
               "This is a request for compatibility guidance, not an attribution of blame.\n"
               "The workflow does not bypass any kernel compatibility checks. Thank you.")
         out.extend(["<details>", f"<summary>English — Copy report: {safe(part)}</summary>", "",
-                    f"**[Open failed workflow logs]({run_url})** — clickable link for the developer.",
+                    f"**Workflow:** [{run_url}]({run_url}) — click the URL to open the failed build logs.",
                     "", f"{FENCE}text", en, FENCE, "", "</details>", ""])
     return "\n".join(out) + "\n"
 
