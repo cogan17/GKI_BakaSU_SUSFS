@@ -1792,7 +1792,7 @@ jobs:
         if: inputs.clean_build != true && inputs.use_nomount
         run: |
           bash scripts/package_nomount.sh "$KERNEL_ROOT/common/NoMount" \
-            "$NOMOUNT_COMMIT" "$GITHUB_WORKSPACE/companion-files" "$CONFIG"
+            "$NOMOUNT_COMMIT" "$GITHUB_WORKSPACE/companion-files" "$CONFIG-$BUILD_VARIANT"
 
       - name: Verify and record complete bundle
         if: inputs.clean_build != true
@@ -1803,7 +1803,7 @@ jobs:
             > "$RUNNER_TEMP/cogan-bundle.config"
           python3 scripts/companion_artifacts.py finalize \
             --directory "$RUNNER_TEMP/cogan-companions" \
-            --destination companion-files --prefix "$CONFIG" \
+            --destination companion-files --prefix "$CONFIG-$BUILD_VARIANT" \
             --config "$RUNNER_TEMP/cogan-bundle.config" \
             --kernel "$CONFIG-$BUILD_VARIANT-AnyKernel3.zip" \
             --module "${NOMOUNT_MODULE:-}"
