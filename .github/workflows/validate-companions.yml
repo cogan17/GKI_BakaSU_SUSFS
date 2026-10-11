@@ -8,6 +8,7 @@ on:
       - '.github/workflows/validate-companions.yml'
       - 'scripts/companion_artifacts.py'
       - 'scripts/upstream_compat_notice.py'
+      - 'scripts/component_failure_notice.py'
       - 'scripts/package_nomount.sh'
       - 'scripts/prepare_bundle_release.py'
       - 'tests/test_companion_artifacts.py'
@@ -44,6 +45,44 @@ jobs:
           assert "I am not assuming" in body
           assert body.count("actions/runs/123") == 3
           print("Upstream bilingual report smoke test passed")
+          PY
+      - name: Verify component failure notices
+        run: |
+          python3 -m py_compile scripts/component_failure_notice.py
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, 'scripts')
+          import component_failure_notice as m
+
+          def sample(step):
+              record = {step: {'outcome': 'failure'}}
+              failures = m.failing_steps(record)
+              assert len(failures) == 1
+              rendered = m.format_notice(
+                  failures=failures,
+                  repository='cogan17/GKI_BakaSU_SUSFS',
+                  run_url='https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/runs/123',
+                  build='android14-6.1.177-lts-r9',
+                  metadata={'bakasu_commit': 'a' * 40, 'nomount_commit': 'b' * 40,
+                            'kernel_driver_version': 35224},
+                  baka_sha='a' * 40,
+                  susfs_sha='c' * 40,
+                  nomount_sha='b' * 40)
+              assert 'Penyebab yang diketahui' in rendered
+              assert 'actions/runs/123' in rendered
+              assert 'Version' not in rendered or 'not' not in rendered
+              return rendered
+
+          for step in ('apply_nomount', 'package_nomount_metamodule',
+                       'verify_manager_driver', 'apply_susfs_patches',
+                       'verify_bundle', 'build_standard_kernel'):
+              body = sample(step)
+              assert 'Title:' in body and 'English' in body
+          assert 'NoMount' in sample('apply_nomount')
+          assert 'BakaSU' in sample('verify_manager_driver')
+          assert 'belum dapat ditentukan' in sample('verify_bundle')
+          assert m.failing_steps({'apply_nomount': {'outcome': 'success'}}) == []
+          print('Component failure notice smoke tests passed')
           PY
       - name: Check NoMount packaging shell syntax
         run: bash -n scripts/package_nomount.sh
