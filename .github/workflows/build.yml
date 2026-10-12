@@ -1828,6 +1828,18 @@ jobs:
           fi
           cp "$SRC_DIR/Image" ./Bypass-Image
 
+      # Cogan pre-flash guard for audited GKI families. Do not silently generalize
+      # to kernel families whose device/KMI semantics have not been reviewed.
+      - name: Prepare Cogan pre-flash KMI guard
+        id: prepare_cogan_flash_guard
+        if: (inputs.android_version == 'android14' && inputs.kernel_version == '6.1') || (inputs.android_version == 'android15' && inputs.kernel_version == '6.6') || (inputs.android_version == 'android16' && inputs.kernel_version == '6.12')
+        run: |
+          set -euo pipefail
+          python3 scripts/flash_safety_gate.py prepare \
+            --android "${{ inputs.android_version }}" \
+            --kernel "${{ inputs.kernel_version }}" \
+            --script "$ANYKERNEL3/anykernel.sh"
+
       # ==================== Create AnyKernel3 archive ====================
       - name: Create AnyKernel3 archive
         id: create_anykernel3_archive
@@ -1835,6 +1847,14 @@ jobs:
           cd $ANYKERNEL3
           ZIP_NAME="${CONFIG}-${BUILD_VARIANT}-AnyKernel3.zip"
           mv ../Image ./Image
+          # Stamp only audited GKI combinations after the final Image reaches AnyKernel3.
+          case "${{ inputs.android_version }}-${{ inputs.kernel_version }}" in
+            android14-6.1|android15-6.6|android16-6.12)
+              python3 "$GITHUB_WORKSPACE/scripts/flash_safety_gate.py" stamp \
+                --android "${{ inputs.android_version }}" \
+                --kernel "${{ inputs.kernel_version }}" \
+                --directory "$PWD" ;;
+          esac
           if [ "${{ inputs.build_bypass }}" = "true" ]; then
             if [ ! -f "../Bypass-Image" ]; then
               echo "::error::Bypass-Image not found; stopping packaging"
@@ -1894,6 +1914,16 @@ jobs:
             --config "$RUNNER_TEMP/cogan-bundle.config" \
             --kernel "$CONFIG-$BUILD_VARIANT-AnyKernel3.zip" \
             --module "${NOMOUNT_MODULE:-}"
+
+      - name: Verify Cogan flashable ZIP before artifact upload
+        id: verify_cogan_flash_guard
+        if: (inputs.android_version == 'android14' && inputs.kernel_version == '6.1') || (inputs.android_version == 'android15' && inputs.kernel_version == '6.6') || (inputs.android_version == 'android16' && inputs.kernel_version == '6.12')
+        run: |
+          set -euo pipefail
+          python3 scripts/flash_safety_gate.py verify \
+            --android "${{ inputs.android_version }}" \
+            --kernel "${{ inputs.kernel_version }}" \
+            --zip "$CONFIG-$BUILD_VARIANT-AnyKernel3.zip"
 
       - name: Upload normal manager APK
         id: upload_normal_manager
