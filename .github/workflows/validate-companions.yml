@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - '.github/workflows/build.yml'
+      - '.github/workflows/kernel-custom.yml'
+      - '.github/workflows/main.yml'
+      - 'tests/test_workflow_curation.py'
       - '.github/workflows/manual-release.yml'
       - '.github/workflows/notify-published-release.yml'
       - '.github/workflows/send_bot_notice.yml'
@@ -86,5 +89,7 @@ jobs:
         run: |
           python3 -m py_compile scripts/flash_safety_gate.py
           python3 -m unittest discover -s tests -p 'test_flash_safety.py' -v
+      - name: Protect Cogan options from cleanup regressions
+        run: python3 -m unittest discover -s tests -p 'test_workflow_curation.py' -v
       - name: Check NoMount packaging shell syntax
         run: bash -n scripts/package_nomount.sh

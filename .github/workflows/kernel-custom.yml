@@ -1,5 +1,5 @@
 name: Android Kernel Build - Custom
-run-name: "Cogan ${{ inputs.revision }} | ${{ inputs.android_version }} ${{ inputs.kernel_version }}.${{ inputs.sub_level }} ${{ inputs.os_patch_level }} | BakaSU"
+run-name: "Cogan${{ inputs.revision && format(' {0}', inputs.revision) || '' }} | ${{ inputs.android_version }} ${{ inputs.kernel_version }}.${{ inputs.sub_level }} ${{ inputs.os_patch_level }} | BakaSU"
 
 # Use Node.js 24
 env:
@@ -84,7 +84,7 @@ on:
         type: boolean
         default: true
       use_nomount:
-        description: 'Enable NoMount (hide mount points)'
+        description: 'Enable matching NoMount driver and metamodule'
         required: false
         type: boolean
         default: true
@@ -94,7 +94,7 @@ on:
         type: boolean
         default: true
       use_rekernel:
-        description: "Enable Re-Kernel driver"
+        description: "Enable Re-Kernel (experimental; check upstream compatibility)"
         required: false
         type: boolean
         default: true

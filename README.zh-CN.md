@@ -67,7 +67,7 @@ Cogan 注重**可追溯的构建与多层兼容性检查**，而不只是成功�
 
 在 **[Build Kernel](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/main.yml)** 中，`build_target` 可选择单个 KMI 或 `all`；也可启用 `build_kernel_version`，输入 `6.6.66` 或 `6.6.X` 等条件。5.10/5.15 还必须选择对应的 `kernel_android_version`。
 
-**注意：** 主工作流的 `build_time` 仍有旧默认值；希望使用当前 UTC 时间时，请手动填入 `N`。Custom Build 的默认值已经是 `N`。
+**构建时间：** Custom Build 和 Build Kernel（高级）现在均默认使用 `N`（当前 UTC 时间），保留全部高级功能。
 
 ### 3. Manual Release From Run
 

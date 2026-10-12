@@ -67,7 +67,7 @@ Both 5.10 and 5.15 correspond to multiple Android KMI. Especially for Android 13
 
 In **[Build Kernel](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/main.yml)**, set `build_target` to one KMI or `all`. Alternatively enable `build_kernel_version` and enter `6.6.66` or a series wildcard such as `6.6.X`. For 5.10 / 5.15, also specify `kernel_android_version`.
 
-**Note:** The main workflow still has an outdated `build_time` default. Enter `N` if you want the current UTC time. Custom Build already defaults to `N`.
+**Build time:** Custom Build and Build Kernel (Advanced) now default to `N` (current UTC). All advanced capabilities remain available.
 
 ### 3. Manual Release From Run
 

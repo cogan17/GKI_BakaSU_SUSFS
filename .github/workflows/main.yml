@@ -5,9 +5,10 @@
 # 1. Build all GKI kernel versions
 # 2. Collect rejected patch files for debugging
 # 3. Create a GitHub Release (optional)
+# Advanced mode retains all features; Custom Build holds Cogan's curated defaults.
 # ========================================
 
-name: Build Kernel
+name: Build Kernel (Advanced)
 
 # Use Node.js 24
 env:
@@ -52,7 +53,7 @@ on:
       build_time:
         description: "Custom build time (optional; N or blank means current UTC)"
         type: string
-        default: "Sun Dec 01 08:10:00 UTC 2024"
+        default: "N"
         required: false
       droidspaces:
         description: "Droidspaces container support (5.10–6.6: slot patches; 6.12+: enable/disable)"
