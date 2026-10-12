@@ -1349,86 +1349,29 @@ jobs:
           sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' common/security/Kconfig
 
       # ==================== Apply Re-Kernel ====================
-      # Re-Kernel uses GKI Vendor Hooks for kernel-level protection
+      # Only stage an audited, pinned source layout; do not alter NoMount/SUSFS logic.
       - name: Apply Re-Kernel
         id: apply_re_kernel
         if: ${{ inputs.clean_build != true && inputs.use_rekernel && !(inputs.android_version == 'android17' && inputs.kernel_version == '6.18') }}
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
-         set -e
-         echo "Integrating Re-Kernel..."
-         TMP_REKERNEL=/tmp/rekernel
-         rm -rf "$TMP_REKERNEL"
-         git clone --depth 1 https://github.com/Sakion-Team/Re-Kernel.git "$TMP_REKERNEL"
+          set -euo pipefail
+          echo "Integrating pinned Re-Kernel sources (layout validated first)..."
+          TMP_REKERNEL="$RUNNER_TEMP/cogan-rekernel-source"
+          PIN="ac08296174d7fb2801c0eee1084f067a34f8a0fe"
+          mkdir -p "$TMP_REKERNEL"
+          git -C "$TMP_REKERNEL" init -q
+          git -C "$TMP_REKERNEL" remote add origin https://github.com/Sakion-Team/Re-Kernel.git
+          git -C "$TMP_REKERNEL" fetch --depth 1 origin "$PIN"
+          git -C "$TMP_REKERNEL" checkout -q --detach FETCH_HEAD
+          test "$(git -C "$TMP_REKERNEL" rev-parse HEAD)" = "$PIN" || exit 1
+          python3 "$GITHUB_WORKSPACE/scripts/rekernel_source_gate.py" \
+            --source "$TMP_REKERNEL/LKM-Source" \
+            --common "$KERNEL_ROOT/common" \
+            --defconfig "$DEFCONFIG" \
+            --kernel-version "${{ inputs.kernel_version }}"
 
-         # 1. Menyiapkan dan Menyalin Folder Source
-         mkdir -p common/drivers/rekernel
-         find "$TMP_REKERNEL" -name "rekernel.c" -exec cp {} common/drivers/rekernel/ \;
-         find "$TMP_REKERNEL" -name "rekernel.h" -exec cp {} common/drivers/rekernel/ \;
-
-         # 2. Patching Otomatis file_operations ke proc_ops (Untuk Kernel 6.1)
-         echo "Patching rekernel.c for Kernel 6.1 compatibility..."
-         sed -i 's/struct file_operations/struct proc_ops/g' common/drivers/rekernel/rekernel.c
-         sed -i 's/\.owner = THIS_MODULE,//g' common/drivers/rekernel/rekernel.c
-         sed -i 's/\.read =/.proc_read =/g' common/drivers/rekernel/rekernel.c
-         sed -i 's/\.write =/.proc_write =/g' common/drivers/rekernel/rekernel.c
-         sed -i 's/\.open =/.proc_open =/g' common/drivers/rekernel/rekernel.c
-         sed -i 's/\.release =/.proc_release =/g' common/drivers/rekernel/rekernel.c
-         sed -i 's/\.unlocked_ioctl =/.proc_ioctl =/g' common/drivers/rekernel/rekernel.c
-         sed -i 's/\.compat_ioctl =/.proc_compat_ioctl =/g' common/drivers/rekernel/rekernel.c
-         sed -i 's/\.llseek =/.proc_lseek =/g' common/drivers/rekernel/rekernel.c
-
-
-         # 3. Membuat Kconfig
-         cat > common/drivers/rekernel/Kconfig << 'EOF'
-         menu "Re:Kernel"
-         config REKERNEL
-            bool "Re:Kernel support (GKI Vendor Hooks)"
-            default y
-            help
-              Enable Re-Kernel support via GKI Vendor Hooks.
-
-         config REKERNEL_NETWORK
-            bool "Re:Kernel NetReceive unfreeze support"
-            depends on REKERNEL
-            default n
-         endmenu
-         EOF
-
-         # 4. Membuat Makefile (Termasuk bypass error peringatan compiler)
-         cat > common/drivers/rekernel/Makefile << 'EOF'
-         obj-$(CONFIG_REKERNEL) += rekernel.o
-         ccflags-$(CONFIG_REKERNEL_NETWORK) += -DNETWORK_FILTER
-         ccflags-y += -Wno-error -Wno-format -Wno-format-extra-args
-         EOF
-
-
-
-          # Add to the driver tree
-          if ! grep -qF 'source "drivers/rekernel/Kconfig"' common/drivers/Kconfig; then
-            sed -i '/^endmenu$/i source "drivers/rekernel/Kconfig"' common/drivers/Kconfig
-          fi
-          if ! grep -qF 'obj-$(CONFIG_REKERNEL) += rekernel/' common/drivers/Makefile; then
-            echo 'obj-$(CONFIG_REKERNEL) += rekernel/' >> common/drivers/Makefile
-          fi
-
-          # Enable kernel version macro
-          REKERNEL_H="common/drivers/rekernel/rekernel.h"
-          VERSION_MACRO="KERNEL_$(echo "${{ inputs.kernel_version }}" | tr '.' '_')"
-          if grep -q "^// #define ${VERSION_MACRO}$" "$REKERNEL_H"; then
-            sed -i "s|^// #define ${VERSION_MACRO}$|#define ${VERSION_MACRO}|" "$REKERNEL_H"
-          fi
-
-          # Fix header include paths for in-tree builds
-          sed -i 's|#include <../android/binder_internal.h>|#include "../../drivers/android/binder_internal.h"|g' common/drivers/rekernel/rekernel.c
-          # Add binder_internal dependency to prevent DEFINE_SHOW_ATTRIBUTE errors on 5.10
-          grep -qF '#include <linux/seq_file.h>' common/drivers/rekernel/rekernel.c || sed -i '/#include <trace\/hooks\/signal.h>/a #include <linux/seq_file.h>' common/drivers/rekernel/rekernel.c
-
-          # Configure defconfig (idempotent)
-          grep -q '^CONFIG_REKERNEL=y$' "$DEFCONFIG" || echo "CONFIG_REKERNEL=y" >> "$DEFCONFIG"
-          grep -q '^CONFIG_REKERNEL_NETWORK=y$' "$DEFCONFIG" || echo "CONFIG_REKERNEL_NETWORK=y" >> "$DEFCONFIG"
-
-          # ==================== Apply NoMount ====================
+      # ==================== Apply NoMount ====================
       # Hide mount points to bypass root detection (NoMount)
       - name: Apply NoMount
         id: apply_nomount

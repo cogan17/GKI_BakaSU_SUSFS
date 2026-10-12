@@ -14,6 +14,8 @@ on:
       - 'scripts/package_nomount.sh'
       - 'scripts/prepare_bundle_release.py'
       - 'scripts/flash_safety_gate.py'
+      - 'scripts/rekernel_source_gate.py'
+      - 'tests/test_rekernel_source_gate.py'
       - 'tests/test_flash_safety.py'
       - 'tests/test_companion_artifacts.py'
       - 'scripts/telegram_notify.py'
@@ -86,5 +88,9 @@ jobs:
         run: |
           python3 -m py_compile scripts/flash_safety_gate.py
           python3 -m unittest discover -s tests -p 'test_flash_safety.py' -v
+      - name: Test Re-Kernel layout adaptation and Cogan guards
+        run: |
+          python3 -m py_compile scripts/rekernel_source_gate.py
+          python3 -m unittest discover -s tests -p 'test_rekernel_source_gate.py' -v
       - name: Check NoMount packaging shell syntax
         run: bash -n scripts/package_nomount.sh
