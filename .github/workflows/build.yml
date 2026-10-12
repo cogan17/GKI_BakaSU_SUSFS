@@ -1915,6 +1915,16 @@ jobs:
             --kernel "$CONFIG-$BUILD_VARIANT-AnyKernel3.zip" \
             --module "${NOMOUNT_MODULE:-}"
 
+      - name: Verify Cogan flashable ZIP before artifact upload
+        id: verify_cogan_flash_guard
+        if: (inputs.android_version == 'android14' && inputs.kernel_version == '6.1') || (inputs.android_version == 'android15' && inputs.kernel_version == '6.6') || (inputs.android_version == 'android16' && inputs.kernel_version == '6.12')
+        run: |
+          set -euo pipefail
+          python3 scripts/flash_safety_gate.py verify \
+            --android "${{ inputs.android_version }}" \
+            --kernel "${{ inputs.kernel_version }}" \
+            --zip "$CONFIG-$BUILD_VARIANT-AnyKernel3.zip"
+
       - name: Upload normal manager APK
         id: upload_normal_manager
         if: inputs.clean_build != true
@@ -2014,16 +2024,6 @@ jobs:
 #          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot-lz4.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
 #          cp ./boot-lz4.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot-lz4.img
 #
-      - name: Verify Cogan flashable ZIP before artifact upload
-        id: verify_cogan_flash_guard
-        if: (inputs.android_version == 'android14' && inputs.kernel_version == '6.1') || (inputs.android_version == 'android15' && inputs.kernel_version == '6.6') || (inputs.android_version == 'android16' && inputs.kernel_version == '6.12')
-        run: |
-          set -euo pipefail
-          python3 scripts/flash_safety_gate.py verify \
-            --android "${{ inputs.android_version }}" \
-            --kernel "${{ inputs.kernel_version }}" \
-            --zip "$CONFIG-$BUILD_VARIANT-AnyKernel3.zip"
-
       # ==================== Collect rejected patch files ====================
       # Collect all .rej files for debugging patch failures
       - name: Collect rejected patch files

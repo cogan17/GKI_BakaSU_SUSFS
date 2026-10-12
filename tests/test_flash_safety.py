@@ -109,6 +109,18 @@ class FlashSafetyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             g.verify(self.args)
 
+    def test_workflow_verifies_zip_before_all_bundle_uploads(self):
+        workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/build.yml").read_text()
+        verification = workflow.index("- name: Verify Cogan flashable ZIP before artifact upload")
+        for step in (
+            "- name: Upload normal manager APK",
+            "- name: Upload spoofed manager APK",
+            "- name: Upload matching NoMount metamodule",
+            "- name: Upload bundle source and checksum manifest",
+            "- name: Upload ready-to-flash ZIP",
+        ):
+            self.assertLess(verification, workflow.index(step), step)
+
     def test_generic_kernel_still_checks_kmi_family(self):
         self.args.device = ""
         g.prepare(self.args)
