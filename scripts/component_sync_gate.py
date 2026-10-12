@@ -290,8 +290,11 @@ def render(issues, build, run_url, meta, stage, susfs_sha, nomount_sha):
     driver = safe(meta.get("kernel_driver_version", "not verified"))
     baka_sha = safe(meta.get("bakasu_commit", "not available"))
     out = ["<!-- COGAN_VERIFIED_COMPAT_FAILURE -->",
-           "## ❌ BUILD GAGAL — Komponen tidak sinkron",
+           "## ❌ Build failed / Build gagal — component compatibility check",
            "",
+           "**Choose language / Pilih bahasa:**", "",
+           "<details>", "<summary>🇮🇩 Bahasa Indonesia — laporan kegagalan</summary>", "",
+           "## ❌ BUILD GAGAL — Komponen tidak sinkron", "",
            "**Tindakan:** Build dihentikan; tidak ada paket baru yang boleh dipublikasikan.",
            f"**Konfigurasi:** {BACKTICK}{safe(build)}{BACKTICK}",
            f"**Pemeriksaan:** {safe(stage)}. [Lihat log build]({run_url}).", ""]
@@ -304,13 +307,34 @@ def render(issues, build, run_url, meta, stage, susfs_sha, nomount_sha):
         target = f"[{part}]({DESTINATIONS[part]})" if direct and part in DESTINATIONS else "integrasi Cogan terlebih dahulu"
         out.append(f"**Tujuan laporan:** {target}.")
         if direct and part in DESTINATIONS:
-            out.append("**Kirim:** salin laporan Inggris di bawah ke halaman pengembang tersebut.")
+            out.append("**Kirim:** salin judul dan deskripsi laporan Inggris di bawah ke halaman pengembang.")
         else:
-            out.append("**Kirim:** laporan ini untuk pemeriksaan internal Cogan; jangan kirim ke upstream sebelum penyebab terkonfirmasi.")
+            out.append("**Kirim:** laporan untuk pemeriksaan internal Cogan; jangan kirim ke upstream sebelum penyebab terkonfirmasi.")
         out.append("")
+    out.extend(["</details>", "", "<details>",
+                "<summary>🇬🇧 English — failure report and evidence</summary>", "",
+                "## ❌ BUILD FAILED — Component compatibility mismatch", "",
+                "**Action:** The build was stopped; no new flashable artifact may be published.",
+                f"**Configuration:** {BACKTICK}{safe(build)}{BACKTICK}",
+                f"**Validation stage:** {safe(stage)}. [Open build logs]({run_url}).", ""])
+    for part, problems in groups.items():
+        out.extend([f"### {safe(part)} — compatibility mismatch", ""])
+        for issue in problems:
+            out.append(f"- **Reason:** {safe(english_reason(issue.reason))} **Evidence:** {BACKTICK}{safe(issue.evidence)}{BACKTICK}.")
+        out.append("")
+        direct = any(x.upstream for x in problems)
+        target = f"[{part}]({DESTINATIONS[part]})" if direct and part in DESTINATIONS else "Cogan integration first"
+        out.append(f"**Report destination:** {target}.")
+        if direct and part in DESTINATIONS:
+            out.append("**Next step:** Copy the separate Issue Title and Issue Description below into the upstream issue form.")
+        else:
+            out.append("**Next step:** Internal Cogan triage only; do not report upstream without confirmation.")
+        out.append("")
+    out.extend(["</details>", ""])
+    for part, problems in groups.items():
         observations = "\n".join(f"- {safe(english_reason(x.reason))} | Evidence: {safe(x.evidence)}" for x in problems)
-        en = (f"Title: Build compatibility inquiry — {safe(part)} ({safe(build)})\n\n"
-              "Hello maintainers,\n\n"
+        issue_title = f"Build compatibility inquiry — {safe(part)} ({safe(build)})"
+        issue_description = ("Hello maintainers,\n\n"
               "I maintain the Cogan kernel build repository. The validation gate found "
               "the following objective mismatches:\n\n"
               f"{observations}\n\n"
@@ -320,8 +344,13 @@ def render(issues, build, run_url, meta, stage, susfs_sha, nomount_sha):
               "This is a request for compatibility guidance, not an attribution of blame.\n"
               "The workflow does not bypass any kernel compatibility checks. Thank you.")
         out.extend(["<details>", f"<summary>English — Copy report: {safe(part)}</summary>", "",
-                    f"**[Open failed workflow logs]({run_url})** — clickable link for the developer.",
-                    "", f"{FENCE}text", en, FENCE, "", "</details>", ""])
+                    f"**Workflow:** [{run_url}]({run_url}) — click the URL to open the failed build logs.",
+                    "",
+                    "**Issue Title — copy separately into GitHub Title:**", "",
+                    f"{FENCE}text", issue_title, FENCE, "",
+                    "**Issue Description — copy separately into GitHub Description:**", "",
+                    f"{FENCE}text", issue_description, FENCE, "",
+                    "</details>", ""])
     return "\n".join(out) + "\n"
 
 

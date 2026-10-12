@@ -1,4 +1,4 @@
-[简体中文](README.md) | [**English**](README.en.md) | [Bahasa Indonesia](README.id.md)
+[Bahasa Indonesia](README.md) | [**English**](README.en.md) | [简体中文](README.zh-CN.md)
 
 # GKI BakaSU SUSFS · Cogan Fork
 
@@ -8,7 +8,22 @@
 [![Custom Build](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/kernel-custom.yml/badge.svg)](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/kernel-custom.yml)
 [![License](https://img.shields.io/github/license/cogan17/GKI_BakaSU_SUSFS)](LICENSE)
 
+<a href="https://t.me/CoganKernel"><img alt="Telegram Channel" src="https://img.shields.io/badge/TELEGRAM-%40CoganKernel-2596BE?logo=telegram&amp;logoColor=white" height="26"></a> <a href="https://t.me/CoganKernelGp"><img alt="Telegram Group" src="https://img.shields.io/badge/GROUP-%40CoganKernelGp-2596BE?logo=telegram&amp;logoColor=white" height="26"></a>
+
 **Quick links:** [Actions](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions) · [Custom Build](.github/workflows/kernel-custom.yml) · [Main Build](.github/workflows/main.yml) · [Manual Release](.github/workflows/manual-release.yml) · [Releases](https://github.com/cogan17/GKI_BakaSU_SUSFS/releases)
+
+## Why Choose Cogan Kernel?
+
+Cogan focuses on **traceable builds and layered compatibility checks**, not simply producing a compiled kernel. These are workflow safeguards, **not a guarantee against bootloops, kernel panics, or bricking**.
+
+- **Pre-build compatibility gates:** checks Android GKI/KMI pairing, pinned source revisions, kernel configuration, and upstream compatibility guards. Detected mismatches stop the build (*fail closed*).
+- **Matched BakaSU manager and kernel:** retrieves official normal and spoofed manager APKs for the same BakaSU commit as the kernel driver, and checks version metadata, the certificate accepted by the kernel, and arm64 `ksud`.
+- **Pinned NoMount integration:** kernel driver and metamodule/userspace sources share a selected NoMount commit, with package and source-identity checks.
+- **Traceable artifacts:** flash-ready AnyKernel3 ZIP, companion APKs, optional NoMount metamodule, and a `*-bundle.json` manifest recording commits, provenance, versions, and checksums. Files are available only when the corresponding build and checks succeed.
+- **Release safeguards:** Manual Release From Run checks artifact integrity and completeness before publication, rather than silently mixing components from different versions.
+- **Actionable failure reports:** the GitHub Actions Summary provides validation results, technical evidence, and multilingual summaries to help debug issues and communicate with upstream maintainers.
+
+**SUSFS status:** while BakaSU upstream blocks the requested SUSFS combination, the compatibility gate stops the build. Do not bypass that guard merely to produce a ZIP. Passing CI is no substitute for on-device validation and a tested recovery plan.
 
 ## Project Description
 
@@ -111,15 +126,6 @@ If `config/stock_defconfig` exists in the repository, the build will automatical
 
 The [Update GKI Version Data](.github/workflows/update-gki-data.yml) workflow runs automatically every Monday at UTC 08:00, and can also be triggered manually. The workflow runs sync tests, updates JSON, validates the build matrix, and commits data changes.
 
-## Acknowledgments
-
-- **Original project and primary developer:** [coolzyd9107 / GKI_BakaSU_SUSFS](https://github.com/coolzyd9107/GKI_BakaSU_SUSFS).
-- **Cogan fork, maintenance and customization:** [Cogan (cogan17)](https://github.com/cogan17).
-- **Project history and contributors:** [zzh20188](https://github.com/zzh20188), [zhuzhuzihan](https://github.com/zhuzhuzihan), [TanakaLun](https://github.com/TanakaLun), [luyancib](https://github.com/luyancib), [AlexLiuDev233](https://github.com/AlexLiuDev233), and [cctv18](https://github.com/cctv18).
-- Thanks to the developers and contributors of **BakaSU, KernelSU, SUSFS, NoMount, Re-Kernel, AnyKernel3**, and Android GKI.
-
-This repository is licensed under **GPL-2.0**. The [upstream Telegram channel](https://t.me/BakaSUKernelBuilds) is an upstream community resource, not a dedicated Cogan support channel.
-
 ## Matched manager, kernel, and NoMount bundles
 
 BakaSU builds include official **normal** and **spoofed** manager APKs, the
@@ -139,3 +145,12 @@ records source commits, versions, APK provenance, and file checksums.
 **Manual Release From Run** verifies and publishes the original complete bundles
 from that run, including multiple kernels. Older runs retain explicitly labelled
 kernel-only release support.
+
+## Acknowledgments
+
+- **Original project and primary developer:** [coolzyd9107 / GKI_BakaSU_SUSFS](https://github.com/coolzyd9107/GKI_BakaSU_SUSFS).
+- **Cogan fork, maintenance and customization:** [Cogan (cogan17)](https://github.com/cogan17).
+- **Project history and contributors:** [zzh20188](https://github.com/zzh20188), [zhuzhuzihan](https://github.com/zhuzhuzihan), [TanakaLun](https://github.com/TanakaLun), [luyancib](https://github.com/luyancib), [AlexLiuDev233](https://github.com/AlexLiuDev233), and [cctv18](https://github.com/cctv18).
+- Thanks to the developers and contributors of **BakaSU, KernelSU, SUSFS, NoMount, Re-Kernel, AnyKernel3**, and Android GKI.
+
+This repository is licensed under **GPL-2.0**. The [upstream Telegram channel](https://t.me/BakaSUKernelBuilds) is an upstream community resource, not a dedicated Cogan support channel.
