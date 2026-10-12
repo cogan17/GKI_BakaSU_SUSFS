@@ -67,7 +67,7 @@ Versi 5.10 dan 5.15 sama-sama bersesuaian dengan beberapa KMI Android. Khususnya
 
 Pada **[Build Kernel](https://github.com/cogan17/GKI_BakaSU_SUSFS/actions/workflows/main.yml)**, pilih satu `build_target` atau `all`. Kamu juga dapat mengaktifkan `build_kernel_version` dan memasukkan `6.6.66` atau filter seperti `6.6.X`. Untuk 5.10 / 5.15, isi pula `kernel_android_version`.
 
-**Perhatian:** Workflow utama masih memakai nilai default `build_time` yang lama. Masukkan `N` agar menggunakan waktu UTC terbaru. Pada Custom Build, default sudah `N`.
+**Waktu build:** Custom Build dan Build Kernel (Advanced) kini sama-sama memakai default `N` (UTC terkini). Semua fitur Advanced tetap tersedia.
 
 ### 3. Manual Release From Run
 
